@@ -316,7 +316,7 @@ function startDesktop(dataDir: string): void {
       // app runs as electron.exe, which would otherwise show Electron's icon.
       ...(app.isPackaged ? {} : { icon: path.join(__dirname, '..', 'build', 'icon.png') }),
       // Installed app: no Windows title bar. The page fills the window and the window buttons are drawn over it,
-      // in the theme's colour. Development keeps the normal title bar and the menu bar (File, Edit, View, Window).
+      // in the theme's colour. Development keeps the normal title bar (and, in the dev edition, the menu bar).
       ...(app.isPackaged ? { titleBarStyle: 'hidden' as const, titleBarOverlay: { color: '#00000000', symbolColor: '#e9eef2', height: TITLE_BAR_HEIGHT } } : {}),
       webPreferences: {
         preload: path.join(__dirname, 'preload.cjs'),
@@ -361,7 +361,9 @@ function startDesktop(dataDir: string): void {
 
   void app.whenReady().then(async () => {
     logger.info('starting', { version, packaged: app.isPackaged, dataDir, port });
-    if (app.isPackaged) Menu.setApplicationMenu(null);
+    // No menu bar (File, Edit, View, Window), except in the dev edition run from source, where View has Reload and
+    // the developer tools.
+    if (app.isPackaged || edition.id !== 'dev') Menu.setApplicationMenu(null);
     registerAppProtocol();
     hardenSessions();
     registerIpc();

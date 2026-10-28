@@ -412,7 +412,7 @@ Open **Giveaways** in the sidebar. It has two browser-style tabs:
 - **Giveaways:** **New giveaway** (top right), the **Current giveaway** (running, or entries closed and waiting for the
   draw) and **Completed** giveaways, one line each (prize, when, entries, winners), 5 to a page. Select one to open its
   winners, completion time and draw history.
-- **Kick Messages:** the chat messages described below.
+- **Messages:** the Kick chat messages described below.
 
 ### Start a giveaway
 

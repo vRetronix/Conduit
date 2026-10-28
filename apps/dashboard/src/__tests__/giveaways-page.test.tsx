@@ -79,9 +79,9 @@ describe('Giveaways', () => {
     expect(SECTIONS.find((s) => s.id === 'giveaways')).toMatchObject({ label: 'Giveaways', phase: null });
   });
 
-  it('two browser-style tabs, Giveaways and Kick Messages; the Giveaways tab has the current one, then Completed (no hint at the bottom)', async () => {
+  it('two browser-style tabs, Giveaways and Messages; the Giveaways tab has the current one, then Completed (no hint at the bottom)', async () => {
     const t = await render(state([]));
-    expect(t).toMatch(/^ ?Giveaways 0 Kick Messages 6 New giveaway Current giveaway No giveaway is running\./);
+    expect(t).toMatch(/^ ?Giveaways 0 Messages 6 New giveaway Current giveaway No giveaway is running\./);
     expect(t).toContain('Completed Completed giveaways stay here');
     expect(t).not.toMatch(/Drafts|Cancelled|How viewers enter|Start a giveaway/);
     expect(t).not.toContain('Viewers enter with');

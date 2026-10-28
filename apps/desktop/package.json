@@ -1,7 +1,7 @@
 {
   "name": "@conduit/desktop",
   "productName": "CONDUIT",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "CONDUIT desktop application: Creator Management Platform",
   "author": "Retronix",

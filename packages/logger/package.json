@@ -1,6 +1,6 @@
 {
   "name": "@conduit/logger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Structured JSON logging with size-based rotation and secret redaction.",
   "exports": {

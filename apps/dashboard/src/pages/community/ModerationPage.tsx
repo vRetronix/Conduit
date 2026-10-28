@@ -349,10 +349,9 @@ export function DiscordCommandLog({ s, onUser, title }: { s: DiscordModerationSt
     <section className="card" aria-labelledby="discord-logs">
       <h2 id="discord-logs">{title ?? 'Moderation log'}</h2>
       <p className="muted small">
-        Everything in your server, newest first: CONDUIT’s commands (with Discord’s answer), what CONDUIT protection noticed or
-        did, moderation from Discord’s audit log (Discord’s own buttons, other bots, AutoMod; the bot needs View Audit Log),
-        everything Discord Logging posts — members, messages and server changes — and Loyalty &amp; Rewards: points changes,
-        XP adjustments and changes to its settings and rewards.{onUser && ' Select a name to see everything for that member.'}
+        Everything in your server, newest first: commands, protection, moderation (including Discord’s own and other bots’),
+        Discord Logging, and Loyalty &amp; Rewards. To see moderation done outside CONDUIT, the bot needs the View Audit Log
+        permission.{onUser && ' Click a name to see that member’s history.'}
       </p>
       <DiscordCommandsNote s={s} />
       {rows.length === 0 ? (

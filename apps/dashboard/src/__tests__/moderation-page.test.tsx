@@ -476,7 +476,7 @@ describe('Moderation log: Discord Logging entries', () => {
     const s = discord({ loggingHistory: [entry({}), entry({ at: '2026-10-20T11:00:00Z', category: 'members', title: 'Member joined', posted: false, detail: null })] });
     const t = text(renderToStaticMarkup(<DiscordCommandLog s={s} />));
     expect(t).toMatch(/Messages log troll Message deleted Retro Server In #general · Text unavailable .* Members log troll Member joined Not posted Retro Server/);
-    expect(t).toContain('everything Discord Logging posts');
+    expect(t).toContain('moderation (including Discord’s own and other bots’), Discord Logging, and Loyalty');
   });
 });
 

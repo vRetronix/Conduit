@@ -1,6 +1,6 @@
 {
   "name": "@conduit/shared",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Shared types and validation schemas (environment-neutral: no Node or DOM APIs).",
   "exports": {

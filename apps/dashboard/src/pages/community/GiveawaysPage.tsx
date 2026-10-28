@@ -55,7 +55,7 @@ export function GiveawaysPage() {
 
 /**
  * Giveaways, on two browser-style tabs: **Giveaways** (the one running, then the completed ones as a compact list that
- * opens for details) and **Kick Messages** (what the chatbot posts). How viewers enter is a one-line hint.
+ * opens for details) and **Messages** (what the Kick chatbot posts). How viewers enter is a one-line hint.
  */
 export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: GiveawaysState; onChanged?: () => void; initialTab?: 'giveaways' | 'messages' }) {
   const [tab, setTab] = useState(initialTab);
@@ -71,7 +71,7 @@ export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: G
         label="Giveaways"
         tabs={[
           { id: 'giveaways', label: 'Giveaways', count: active.length + completed.length },
-          { id: 'messages', label: 'Kick Messages', count: KICK_GIVEAWAY_MESSAGE_KINDS.length },
+          { id: 'messages', label: 'Messages', count: KICK_GIVEAWAY_MESSAGE_KINDS.length },
         ]}
         active={tab}
         onChange={setTab}
