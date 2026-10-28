@@ -1,0 +1,18 @@
+{
+  // Node-side code: server, desktop main/preload, packages and tests.
+  // The dashboard (DOM) is type-checked separately via apps/dashboard/tsconfig.json.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "types": ["node"]
+  },
+  "include": [
+    "apps/server/src",
+    "apps/desktop/src",
+    "packages/*/src",
+    "tests",
+    "vitest.config.ts",
+    "apps/dashboard/vite.config.ts",
+    "globals.d.ts"
+  ]
+}

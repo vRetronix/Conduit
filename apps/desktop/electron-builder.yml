@@ -1,0 +1,40 @@
+# Windows installer configuration. Build with `npm run dist` from the repository root.
+# All runtime code is bundled into dist/ by scripts/build.mjs, so no node_modules are packaged
+# and the installer contains no native modules.
+# appId identifies the installation: the installer upgrades an existing CONDUIT install in place.
+appId: com.retronix.conduit
+productName: CONDUIT
+copyright: Copyright © Retronix
+directories:
+  output: release
+  # icon.png: the CONDUIT logo (1024×1024, transparent); electron-builder generates the Windows .ico from it.
+  buildResources: build
+files:
+  - package.json
+  - dist/**/*
+  - "!dist/**/*.map"
+asar: true
+# Electron fuses are flipped in the packaged executable at build time and cannot be changed at runtime.
+electronFuses:
+  # Ignore ELECTRON_RUN_AS_NODE: an inherited value cannot turn CONDUIT.exe into a plain Node.js runtime.
+  runAsNode: false
+  # Ignore NODE_OPTIONS and --inspect/--inspect-brk, which could inject code or attach a debugger.
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  # Load the app only from the integrity-checked app.asar.
+  onlyLoadAppFromAsar: true
+  enableEmbeddedAsarIntegrityValidation: true
+  # The renderer uses app://, not file://.
+  grantFileProtocolExtraPrivileges: false
+npmRebuild: false
+win:
+  icon: build/icon.png
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: CONDUIT

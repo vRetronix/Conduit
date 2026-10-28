@@ -1,0 +1,28 @@
+# Dependencies and build output
+node_modules/
+dist/
+release/
+coverage/
+
+# Development data folder (database, encrypted credentials, logs)
+.devdata/
+
+# Databases
+*.db
+*.db-wal
+*.db-shm
+
+# Private configuration and credentials
+.env
+.env.*
+credentials/
+session.bin
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

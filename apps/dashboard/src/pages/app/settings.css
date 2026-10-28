@@ -1,0 +1,430 @@
+/* Settings: About CONDUIT, Appearance & Themes, and release notes. Colours come from the theme tokens. */
+
+.about-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.card .about-head h2 {
+  margin: 0;
+  letter-spacing: 0.08em;
+}
+
+.about-version {
+  font-weight: 600;
+  color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-channel,
+.about-this {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.about-channel-stable {
+  border-color: var(--accent);
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.about-channel-alpha,
+.about-channel-beta,
+.about-channel-rc,
+.about-channel-prerelease {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+.about-this {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.release + .release {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.release-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.release-head::-webkit-details-marker {
+  display: none;
+}
+
+/* A turning arrow in place of the browser's marker, which a flex summary hides. */
+.release-head::before,
+.release-earlier > summary::before {
+  content: '▸';
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.release[open] > .release-head::before,
+.release-earlier[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.release[open] > .release-head {
+  margin-bottom: 8px;
+}
+
+.release-earlier {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.release-earlier > summary {
+  display: flex;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.release-earlier > summary::-webkit-details-marker {
+  display: none;
+}
+
+.release-earlier[open] > summary {
+  margin-bottom: 4px;
+}
+
+.release-earlier .release {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.release-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.release-head time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.release-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+
+.release-group summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.release-group[open] summary {
+  margin-bottom: 6px;
+}
+
+.release-section h4 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.release-section ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.5;
+}
+
+.release-section li + li {
+  margin-top: 3px;
+}
+
+.release-section code {
+  font-size: 12px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface-3);
+}
+
+.change-kind {
+  color: var(--muted);
+}
+
+.change-kind-added {
+  color: var(--accent);
+}
+
+.change-kind-changed {
+  color: var(--accent-2);
+}
+
+.change-kind-fixed {
+  color: var(--ok);
+}
+
+.change-kind-security {
+  color: var(--warn);
+}
+
+.change-kind-breaking,
+.change-kind-removed {
+  color: var(--bad);
+}
+
+/* Backup & Restore */
+.maint-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin: 8px 0;
+}
+
+.maint-subtitle {
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+
+.restore-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--bad);
+  border-radius: var(--radius);
+}
+
+.restore-confirm p,
+.restore-confirm ul {
+  margin: 0 0 8px;
+}
+
+/* Logs */
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.log-search {
+  flex: 1 1 220px;
+}
+
+.log-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.log-entry {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.log-entry:last-child {
+  border-bottom: 0;
+}
+
+.log-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 12px;
+}
+
+.log-line time,
+.log-where {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.log-message {
+  flex: 1 1 260px;
+  color: var(--text);
+}
+
+.log-level {
+  min-width: 56px;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.log-level-error {
+  color: var(--bad);
+}
+
+.log-level-warn {
+  color: var(--warn);
+}
+
+.log-level-info {
+  color: var(--accent);
+}
+
+.log-level-debug {
+  color: var(--muted);
+}
+
+.log-hint {
+  margin: 4px 0 0;
+  color: var(--accent-2);
+}
+
+.log-details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.log-details pre {
+  margin: 4px 0 0;
+  padding: 8px;
+  max-height: 240px;
+  overflow: auto;
+  font-size: 11px;
+  background: var(--surface-3);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Appearance & Themes */
+.appearance-previewing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.theme-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+}
+
+.theme-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.theme-card-body {
+  display: grid;
+  gap: 3px;
+}
+
+.theme-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.theme-mini {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  height: 74px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.theme-mini-side,
+.theme-mini-panel {
+  border: 1px solid;
+  border-radius: 6px;
+}
+
+.theme-mini-side {
+  width: 22%;
+}
+
+.theme-mini-panel {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+}
+
+.theme-mini-line {
+  height: 4px;
+  width: 70%;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+.theme-mini-line.short {
+  width: 45%;
+}
+
+.theme-mini-button {
+  margin-top: auto;
+  width: 38%;
+  height: 10px;
+  border-radius: 4px;
+}
+
+.theme-mini-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+/* A theme's character in its miniature. */
+.theme-mini-art {
+  position: absolute;
+  right: 6px;
+  bottom: -6px;
+  height: 78px;
+  width: auto;
+  pointer-events: none;
+}
+
+.appearance-test {
+  justify-content: flex-start;
+  margin-top: 12px;
+}

@@ -1,0 +1,46 @@
+{
+  "name": "conduit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CONDUIT — Creator Management Platform. The Link Between Everything.",
+  "author": "Retronix",
+  "license": "UNLICENSED",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24.7"
+  },
+  "scripts": {
+    "setup": "npm install && npm run install-electron -w @conduit/desktop",
+    "dev": "node scripts/dev.mjs",
+    "build": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build.mjs",
+    "start": "node scripts/start.mjs",
+    "server": "node apps/server/dist/server.cjs",
+    "recover-admin": "node apps/server/dist/recover-admin.cjs",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/dashboard/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm run test && npm run build",
+    "version:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/release.mjs check",
+    "release:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/release.mjs status",
+    "release:prepare": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/release.mjs prepare",
+    "release:tag": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/release.mjs tag",
+    "pack:dir": "npm run build && npm run pack:dir -w @conduit/desktop",
+    "dist": "npm run build && npm run dist -w @conduit/desktop"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  }
+}

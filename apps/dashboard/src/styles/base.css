@@ -1,0 +1,222 @@
+/* Base: theme tokens (colours, spacing, glass), page basics, text and status pills. */
+
+:root {
+  /*
+   * Theme tokens. These values are CONDUIT Default (graphite with ice-blue accents), the fallback;
+   * the selected theme (src/theme/registry.ts) sets them on <html>. Components use only these semantic
+   * tokens, so a new theme needs no component changes.
+   */
+  --bg: #111315;
+  --sidebar: #14171a;
+  --surface: #1a1e22;
+  --surface-2: #22272c;
+  --surface-3: #2c3238;
+  --border: #282e34;
+  --border-strong: #3a424a;
+  --text: #e9eef2;
+  --muted: #9ba7b2;
+  --faint: #6e7a85;
+  --accent: #5cc8f0;
+  --accent-2: #a9dcf2;
+  --on-accent: #04202b;
+  --focus: #86d8f6;
+  --ok: #4cc38a;
+  --warn: #e9b562;
+  --bad: #ec6a6a;
+  --glow-1: #3aa7d6;
+  --glow-2: #7c95a8;
+  --shadow: #000000;
+  /* Derived from the tokens above. */
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --gold: var(--accent-2);
+  /* Glass (always on): surface opacity, blur and the background glow. */
+  --surface-alpha: 55%;
+  --sidebar-alpha: 50%;
+  --glass-blur: 28px;
+  --glow-strength: 44%;
+  /* Spacing (one comfortable density). */
+  --card-pad-y: 18px;
+  --card-pad-x: 20px;
+  --item-pad-y: 12px;
+  --item-pad-x: 14px;
+  --gap: 16px;
+  --content-pad-y: 22px;
+  --content-pad-x: 32px;
+  --nav-pad-y: 6px;
+  --control-h: 34px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --ease: 140ms ease;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  color: var(--text);
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 620px at 6% -8%, color-mix(in srgb, var(--glow-1) var(--glow-strength), transparent), transparent 65%),
+    radial-gradient(900px 640px at 102% 108%, color-mix(in srgb, var(--glow-2) var(--glow-strength), transparent), transparent 62%),
+    radial-gradient(700px 480px at 70% 18%, color-mix(in srgb, var(--glow-2) calc(var(--glow-strength) / 2), transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+dl {
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.text-ok {
+  color: var(--ok);
+}
+
+.text-warn {
+  color: var(--warn);
+}
+
+.text-bad {
+  color: var(--bad);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pill-ok {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+}
+
+.pill-warn {
+  background: color-mix(in srgb, var(--warn) 15%, transparent);
+  color: var(--warn);
+}
+
+.pill-bad {
+  background: color-mix(in srgb, var(--bad) 15%, transparent);
+  color: var(--bad);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.small {
+  font-size: 12px;
+}
+
+code {
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 5px;
+}
+
+.pill-muted {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.pill-muted::before {
+  background: var(--faint);
+}
+
+.spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before {
+    transition: none !important;
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
+}

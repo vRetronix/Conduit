@@ -1,0 +1,12 @@
+{
+  "name": "@conduit/dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CONDUIT dashboard (renderer UI)",
+  "dependencies": {
+    "@conduit/shared": "*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

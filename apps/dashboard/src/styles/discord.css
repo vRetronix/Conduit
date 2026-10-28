@@ -1,0 +1,776 @@
+/* Discord: setup, the bot’s presence, embed editor and Discord-style preview, Discord Logging, Loyalty & Rewards, Automated Protection, Embed Creator with buttons and menus. */
+
+.portal-steps,
+.facts {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* Status Updates / Rich Presence Updates. */
+.presence-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* ── Embed editor and Discord-style preview ────────────────────────────── */
+
+.embed-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .embed-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+.embed-form {
+  display: grid;
+  gap: 10px;
+}
+
+.embed-form .field {
+  margin-bottom: 0;
+}
+
+.embed-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.embed-row-tight {
+  grid-template-columns: auto 1fr;
+  align-items: end;
+}
+
+.embed-fields {
+  display: grid;
+  gap: 6px;
+}
+
+/* One card per field (as on Discohook): a header with its number and name, then labelled Name / Inline and a big Value box. */
+.embed-field-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.embed-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.embed-field-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.embed-field-name-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.embed-field-name-row .inline-check {
+  padding-bottom: 8px;
+}
+
+.embed-field-card textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.char-count {
+  float: right;
+  font-weight: 400;
+  color: var(--faint);
+}
+
+.char-count.over {
+  color: var(--bad);
+}
+
+.color-pick {
+  display: flex;
+  gap: 6px;
+}
+
+.color-pick input[type='color'] {
+  width: 38px;
+  height: var(--control-h);
+  padding: 2px;
+  min-height: 0;
+}
+
+.color-pick input:not([type='color']) {
+  width: 90px;
+}
+
+.embed-issues {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--bad);
+  font-size: 12px;
+}
+
+.embed-library {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.discord-preview {
+  position: sticky;
+  top: 0;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: #313338;
+  color: #dbdee1;
+  font-family: 'gg sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+.discord-preview .muted {
+  color: #949ba4;
+  margin: 10px 0 0;
+}
+
+.dp-message {
+  display: flex;
+  gap: 12px;
+}
+
+.dp-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.dp-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.dp-name {
+  font-weight: 600;
+  color: #f2f3f5;
+}
+
+.dp-tag {
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #5865f2;
+  color: #fff;
+  font-size: 10px;
+  vertical-align: 1px;
+}
+
+.dp-content {
+  margin-top: 2px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dp-embed {
+  display: flex;
+  gap: 12px;
+  max-width: 520px;
+  margin-top: 6px;
+  padding: 10px 14px 12px 12px;
+  border-left: 4px solid #202225;
+  border-radius: 4px;
+  background: #2b2d31;
+}
+
+.dp-embed-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dp-author,
+.dp-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f2f3f5;
+}
+
+.dp-footer {
+  font-size: 12px;
+  font-weight: 400;
+  color: #b5bac1;
+}
+
+.dp-title {
+  font-weight: 600;
+  color: #f2f3f5;
+}
+
+.dp-title.dp-link {
+  color: #00a8fc;
+}
+
+.dp-description,
+.dp-field-value {
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dp-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.dp-field {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.dp-field.dp-inline {
+  flex: 1 1 calc(33% - 16px);
+}
+
+.dp-field-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f2f3f5;
+}
+
+.dp-img {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, #3a3c42, #3a3c42 6px, #34363c 6px, #34363c 12px);
+  color: #949ba4;
+  font-size: 11px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.dp-img-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.dp-img-image {
+  width: 100%;
+  height: 140px;
+}
+
+.dp-img-thumb {
+  flex: none;
+  width: 80px;
+  height: 80px;
+}
+
+/* A bundled example picture in place of a placeholder (e.g. the sample stream thumbnail). */
+.dp-img-sample {
+  display: block;
+  object-fit: cover;
+  background: none;
+}
+
+/* ── Discord Logging ───────────────────────────────────────────────────── */
+
+.log-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 12px;
+}
+
+.log-category {
+  display: grid;
+  /* Grid items may shrink below their content, so panels never overlap. */
+  min-width: 0;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.log-category .field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.log-category select {
+  width: 100%;
+}
+
+.log-off {
+  opacity: 0.75;
+}
+
+.log-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.log-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+/* ── Notification preview extras: mention, link buttons ────────────────── */
+
+.dp-mention {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: rgb(88 101 242 / 30%);
+  color: #c9cdfb;
+  font-weight: 500;
+}
+
+.dp-buttons {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  justify-items: start;
+}
+
+.dp-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  background: #4e5058;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dp-note {
+  margin: 10px 0 0;
+  color: #f0b232;
+}
+
+.dp-img-image {
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+
+.button-editor {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Loyalty & Rewards. */
+.loyalty-stat {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.loyalty-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.loyalty-tabs {
+  flex-wrap: wrap;
+}
+
+.loyalty-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loyalty-progress-bar {
+  display: inline-block;
+  width: 90px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.loyalty-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.loyalty-status,
+.loyalty-problems {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loyalty-formula summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.platform-tab .pill {
+  margin-left: 2px;
+}
+
+/* Discord Bot → Protection: one row per feature; its settings open below the row. */
+.protection-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.protection-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  transition: border-color 0.15s var(--ease);
+}
+
+.protection-row.is-open {
+  border-color: var(--border-strong);
+}
+
+.protection-row-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.protection-switch {
+  flex: 0 0 auto;
+  width: 44px;
+}
+
+.protection-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.protection-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .protection-row-head {
+    flex-wrap: wrap;
+  }
+}
+
+/* Embed / message editors: Visual | JSON switch, and the JSON box. */
+.editor-mode {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  width: fit-content;
+}
+
+.editor-mode-tab {
+  padding: 4px 14px;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.editor-mode-tab.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.editor-mode-tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.json-editor {
+  display: grid;
+  gap: 8px;
+}
+
+textarea.json-text {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.45;
+  white-space: pre;
+  tab-size: 2;
+  min-height: 280px;
+}
+
+/* Embed Creator: one tab per embed of the message, and the send area. */
+.embed-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.send-panel {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* Embed Creator buttons and menus: the editor, and how they look in the preview (Discord's colours). */
+.components-editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.components-editor-title {
+  font-weight: 600;
+}
+
+.component-row {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.component-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.component-row-head > strong {
+  margin-right: auto;
+}
+
+.component-item,
+.component-option {
+  display: grid;
+  gap: 10px;
+}
+
+/* Add buttons ("+ Option") sit at the start, not stretched across the row. */
+.component-item > .btn {
+  justify-self: start;
+}
+
+.component-item + .component-item {
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.component-option {
+  padding: 10px 0 2px 14px;
+  border-left: 2px solid var(--border-strong);
+}
+
+.component-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+}
+
+.component-fields > .field {
+  flex: 1 1 160px;
+  min-width: 0;
+  margin: 0;
+}
+
+.component-fields > .field-narrow {
+  flex: 0 1 170px;
+}
+
+/* Checkboxes and remove buttons line up with the inputs beside them. */
+.component-fields > .inline-check,
+.component-fields > .btn {
+  min-height: var(--control-h);
+  align-self: flex-end;
+}
+
+.component-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.component-actions > .editor-row {
+  width: 100%;
+  margin: 0;
+}
+
+.components-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.components-editor + .embed-issues {
+  margin-top: 12px;
+}
+
+.dp-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dp-button-primary {
+  background: #5865f2;
+}
+
+.dp-button-success {
+  background: #248046;
+}
+
+.dp-button-danger {
+  background: #da373c;
+}
+
+.dp-button.is-disabled,
+.dp-select.is-disabled {
+  opacity: 0.5;
+}
+
+.dp-select {
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 400px);
+  padding: 8px 12px;
+  border: 1px solid #1e1f22;
+  border-radius: 4px;
+  background: #2b2d31;
+  color: #b5bac1;
+  font-size: 14px;
+}
+
+/* ── Discord markdown (previews; components/discord/DiscordMarkdown.tsx) ── */
+
+.dp-content > .dp-mention + .md-p {
+  display: inline;
+}
+
+.md-h1,
+.md-h2,
+.md-h3 {
+  margin: 6px 0 2px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.md-h1 {
+  font-size: 1.5em;
+}
+
+.md-h2 {
+  font-size: 1.25em;
+}
+
+.md-h3 {
+  font-size: 1em;
+}
+
+.md-sub {
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.md-quote {
+  margin: 2px 0;
+  padding-left: 12px;
+  border-left: 4px solid color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.md-list {
+  margin: 2px 0;
+  padding-left: 22px;
+}
+
+/* No dark highlights in previews: inline code is just a monospace font, spoilers a dotted underline; code blocks get a
+   light box like Discord's. */
+.md-code,
+.md-codeblock,
+.md-codeblock code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.md-codeblock {
+  margin: 4px 0;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.md-codeblock code {
+  font-size: inherit;
+}
+
+.md-link {
+  color: #00a8fc;
+}
+
+.md-spoiler {
+  text-decoration: underline dotted;
+}
+
+.command-preview.md-preview {
+  margin-top: 4px;
+  white-space: pre-wrap;
+}

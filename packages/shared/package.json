@@ -1,0 +1,13 @@
+{
+  "name": "@conduit/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared types and validation schemas (environment-neutral: no Node or DOM APIs).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

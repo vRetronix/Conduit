@@ -1,0 +1,254 @@
+/* Kick: setup extras, Kick giveaway chat messages, Kick Notifications. */
+
+.hello-toggle {
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Kick giveaway chat messages: a compact list, one message open at a time. */
+.kmsg-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.kmsg + .kmsg {
+  border-top: 1px solid var(--border);
+}
+
+.kmsg-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kmsg-head:hover,
+.kmsg-open .kmsg-head {
+  background: var(--surface-2);
+}
+
+.kmsg-head:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.kmsg-title {
+  flex: 0 0 auto;
+  font-weight: 600;
+}
+
+.kmsg-snippet {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kmsg-tag {
+  flex: 0 0 auto;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.kmsg-tag-unsaved {
+  color: var(--accent-2);
+  border-color: color-mix(in srgb, var(--accent-2) 50%, transparent);
+}
+
+.kmsg-invalid .kmsg-title {
+  color: var(--bad);
+}
+
+.kmsg-chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.kmsg-open .kmsg-chevron {
+  transform: rotate(180deg);
+}
+
+.kmsg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 12px 12px;
+  background: var(--surface-2);
+}
+
+.kmsg-body[hidden] {
+  display: none;
+}
+
+.kmsg-preview {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.kmsg-tools {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kmsg-vars {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.kmsg-vars summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.kmsg-vars summary:hover {
+  color: var(--text);
+}
+
+.kmsg-vars ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.kmsg-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.kmsg-actions [role='status'],
+.kmsg-actions [role='alert'] {
+  margin-right: auto;
+}
+
+/* Kick notifications: "Use default layout" confirmation with a preview. */
+.default-layout-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--accent-2);
+  border-radius: var(--radius);
+}
+
+.default-layout-confirm p {
+  margin: 0;
+}
+
+/* Kick → Clips: settings in two columns, then the clips as a list. */
+.clip-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px 28px;
+}
+
+.clip-settings-head {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.clip-folder {
+  display: block;
+  margin: 4px 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.clip-folder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.clip-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.clip-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+}
+
+.clip-item + .clip-item {
+  border-top: 1px solid var(--border);
+}
+
+.clip-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.clip-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.clip-length {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.clip-note {
+  margin: 12px 0 0;
+}
+
+@media (max-width: 760px) {
+  .clip-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.clip-help {
+  margin-top: 10px;
+}
+
+.clip-help summary {
+  cursor: pointer;
+}
+
+.clip-help ol {
+  margin: 6px 0;
+  padding-left: 18px;
+}

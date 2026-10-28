@@ -1,0 +1,10 @@
+{
+  "name": "@conduit/database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SQLite access, versioned migrations and repositories.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  }
+}

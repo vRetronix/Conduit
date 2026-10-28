@@ -1,0 +1,454 @@
+/* Community features (both platforms): commands and variables, giveaways, moderation, automations. */
+
+/* ── Bot Accounts and Commands pages ───────────────────────────────────── */
+
+.bot-account {
+  display: grid;
+  gap: 12px;
+}
+
+.bot-account .connection-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 18px;
+}
+
+.commands-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* A default command's reply, with its {variables} marked. */
+.command-var {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* A default command's example, under its message. */
+.command-example {
+  margin-top: 4px;
+}
+
+.command-example code {
+  font-size: 11px;
+}
+
+.commands-head h2 {
+  flex: 1;
+  margin: 0;
+}
+
+/* Long descriptions or replies (e.g. a multi-language message) wrap instead of widening the table; command names never
+   break. */
+.commands-table td.cell-wrap {
+  overflow-wrap: anywhere;
+}
+
+.commands-table code {
+  white-space: nowrap;
+}
+
+.command-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  gap: 20px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+@media (max-width: 760px) {
+  .command-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+.variables-help {
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+
+.variables-help h3,
+.variables-help h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.variables-help ul {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.variable-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.variable-chip:focus-visible {
+  outline: 2px solid var(--focus);
+}
+
+/* Variables grouped in folding sections (User and input open first). */
+.variable-group {
+  margin-bottom: 8px;
+}
+
+.variable-group summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.variable-group ul {
+  margin-top: 6px;
+}
+
+.command-preview {
+  overflow-wrap: anywhere;
+}
+
+/* ── Command access (permissions, cooldowns) ───────────────────────────── */
+
+.access-section legend {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cooldown-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cooldown-row input[type='number'] {
+  width: 110px;
+}
+
+/* ── Giveaways ─────────────────────────────────────────────────────────── */
+
+.giveaway-prize {
+  margin: 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.giveaway-description {
+  margin: 6px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.giveaway-winners h4 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  color: var(--accent-2);
+}
+
+.winner-list {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.winner-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.giveaway-editor {
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.giveaway-editor-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.giveaway-editor textarea {
+  width: 100%;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.giveaway-editor textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.commands-table td.cell-toggle {
+  width: 1%;
+  padding-right: 0;
+}
+
+/* Kick Moderation → Automated Protection (rows like Discord Bot → Protection). Dimmed while it's switched off. */
+.rules-off {
+  opacity: 0.6;
+  transition: opacity var(--ease);
+}
+
+/* One person's history in the Logs: back to everyone, and whose it is. */
+.user-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.rule-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rule-terms {
+  margin-bottom: 0;
+}
+
+.rule-actions {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.rule-actions .field {
+  margin-bottom: 0;
+}
+
+.inline-platform {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inline-platform svg {
+  border-radius: 4px;
+}
+
+.history-detail {
+  max-width: 320px;
+  margin-top: 4px;
+}
+
+textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* ── Moderation pages (Phase 10.1) ─────────────────────────────────────── */
+
+.commands-note {
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+
+/* A log's Description cell: the event with its result pill, then where and the details. */
+.log-description-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Browser-style tabs (Commands: Default Commands / Custom Commands) ─────────
+   The active tab is raised and joined to the card below it (same surface, its border running into the card's, with
+   curved feet like a browser tab); the others sit flat beside it. */
+.chrome-tabs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 14px;
+}
+
+.chrome-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: -1px;
+  padding: 10px 18px 11px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background var(--ease),
+    color var(--ease);
+}
+
+.chrome-tab:hover:not(.active) {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+}
+
+.chrome-tab.active {
+  border-color: color-mix(in srgb, var(--text) 9%, transparent);
+  background: color-mix(in srgb, var(--surface) var(--surface-alpha, 100%), transparent);
+  color: var(--text);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 0px)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur, 0px)) saturate(140%);
+}
+
+/* The curved feet joining the tab to the card. */
+.chrome-tab.active::before,
+.chrome-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.chrome-tab.active::before {
+  left: -12px;
+  background: radial-gradient(circle at 0 0, transparent 11.5px, color-mix(in srgb, var(--surface) var(--surface-alpha, 100%), transparent) 12px);
+}
+
+.chrome-tab.active::after {
+  right: -12px;
+  background: radial-gradient(circle at 100% 0, transparent 11.5px, color-mix(in srgb, var(--surface) var(--surface-alpha, 100%), transparent) 12px);
+}
+
+.chrome-tab-count {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.chrome-tab.active .chrome-tab-count {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+}
+
+.chrome-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* The card the tabs sit on. */
+.chrome-tab-panel {
+  position: relative;
+}
+
+/* Buttons at the top right of a tab's content (Edit access, New command). */
+.commands-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* ── Giveaways (inside the Giveaways tab) ──────────────────────────────────── */
+.giveaway-group {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The running giveaway: a framed block inside the tab's card. */
+.giveaway-current {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+
+.giveaway-current + .giveaway-current {
+  margin-top: 10px;
+}
+
+/* Completed giveaways: one line each, opening for the details. */
+.giveaway-rows {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.giveaway-row + .giveaway-row {
+  border-top: 1px solid var(--border);
+}
+
+.giveaway-row > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 11px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.giveaway-row > summary::-webkit-details-marker {
+  display: none;
+}
+
+.giveaway-row > summary::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.giveaway-row[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.giveaway-row > summary:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+
+.giveaway-row-prize {
+  font-weight: 650;
+}
+
+.giveaway-inset {
+  padding: 4px 14px 14px;
+}

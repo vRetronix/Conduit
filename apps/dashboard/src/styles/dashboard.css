@@ -1,0 +1,135 @@
+/* Dashboard: the account cards (Connect Accounts) and System status. */
+
+.connection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* Every card the same size, also on the next row. */
+  grid-auto-rows: 1fr;
+  gap: 16px;
+}
+
+.connection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--card-pad-y);
+  transition: border-color var(--ease);
+}
+
+.connection-card:hover {
+  border-color: var(--border-strong);
+}
+
+.connection-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.connection-head h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 16px;
+}
+
+.connection-head svg {
+  flex: none;
+  border-radius: 10px;
+}
+
+.connection-details {
+  font-size: 13px;
+}
+
+.connection-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.note-warn {
+  color: var(--warn);
+}
+
+.note-error {
+  color: var(--bad);
+}
+
+.connection-actions {
+  margin-top: auto;
+}
+
+/* The note on why a platform can't be connected yet, kept with the button at the bottom of the card. */
+.connection-bottom {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.connection-bottom > .connection-actions {
+  margin-top: 0;
+}
+
+.connection-actions .btn {
+  width: 100%;
+}
+
+/* ── Phase 3: real connections ─────────────────────────────────────────── */
+
+.account-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.account-avatar-initial {
+  display: inline-grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── Discord setup wizard ──────────────────────────────────────────────── */
+
+.connection-actions.stack-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-cell.left {
+  justify-content: flex-start;
+}
+
+/* ── Dashboard ─────────────────────────────────────────────────────────── */
+
+.status-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 28px;
+}
+
+.status-columns h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--faint);
+  letter-spacing: 0.3px;
+}
+
+.connection-head .pill {
+  margin-left: auto;
+}
