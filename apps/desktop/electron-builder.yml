@@ -2,6 +2,8 @@
 # All runtime code is bundled into dist/ by scripts/build.mjs, so no node_modules are packaged
 # and the installer contains no native modules.
 # appId identifies the installation: the installer upgrades an existing CONDUIT install in place.
+# scripts/package.mjs overrides appId, productName and shortcutName for the edition being built (scripts/edition.mjs);
+# the values below are the CONDUIT on GitHub ones.
 appId: com.retronix.conduit
 productName: CONDUIT
 copyright: Copyright © Retronix

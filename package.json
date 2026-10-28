@@ -1,11 +1,12 @@
 {
   "name": "conduit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "CONDUIT — Creator Management Platform. The Link Between Everything.",
   "author": "Retronix",
   "license": "UNLICENSED",
+  "edition": "github",
   "workspaces": [
     "apps/*",
     "packages/*"

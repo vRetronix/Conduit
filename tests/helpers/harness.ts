@@ -102,7 +102,7 @@ export interface HarnessOptions {
   botFactory?: BotClientFactory;
   /** Random numbers 0 ≤ n < 1 (Loyalty XP amounts). */
   random?: () => number;
-  /** Kick's website (!followage, clips). Defaults to failing every request, like the network above. */
+  /** Kick's website (unofficial data, e.g. !followage and clips). Defaults to failing every request, like the network above. */
   kickWebFetch?: FetchLike;
 }
 

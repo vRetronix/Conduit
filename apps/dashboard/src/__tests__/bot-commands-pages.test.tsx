@@ -211,10 +211,16 @@ describe('Command editor variables', () => {
 
   it('lists the variables by group, clickable, with examples; only the ones that work on Kick', async () => {
     const html = await editor('kick');
-    expect(groups(html)).toEqual(['User and input', 'Your Kick stream', 'Random and maths', 'Counters', 'Time', 'Kick only']);
+    expect(groups(html)).toEqual([
+      'User and input',
+      'Your Kick stream',
+      'Random and maths',
+      'Counters',
+      'Time',
+      'Kick only',
+    ]);
     const list = inserts(html);
     for (const v of ['{user}', '{touser}', '{args}', '{1}', '{random:1-6}', '{pick:heads;tails}', '{counter:deaths+1}', '{uptime}', '{submonths}']) expect(list).toContain(v);
-    for (const v of ['{followers}', '{followage}', '{streamer.bio}']) expect(list).not.toContain(v); // no unofficial Kick data
     for (const v of ['{mention}', '{points}', '{server}']) expect(list).not.toContain(v); // Discord only
     const t = text(html);
     expect(t).toContain('Add |text for a fallback');

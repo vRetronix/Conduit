@@ -1,4 +1,4 @@
-/** Kick website data for !followage: safe requests, soft failures, caching and pausing. */
+/** Kick website data: safe requests, soft failures, caching and pausing. */
 import { describe, expect, it } from 'vitest';
 import { KickWebData } from '../../apps/server/src/kick/kick-web';
 
@@ -19,7 +19,7 @@ function setup(respond: (url: string) => Response | Promise<Response>) {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const FOLLOWING = { following_since: '2025-01-02T03:04:05.000000Z', subscribed_for: 7 };
 
-describe('Kick website data (!followage)', () => {
+describe('Kick website data', () => {
   it('reads a viewer’s follow date and sub months; sends no credentials', async () => {
     const { web, urls, headers } = setup(() => json(FOLLOWING));
     expect(await web.viewer('retronix', 'MyChatBot')).toEqual({ followingSince: '2025-01-02T03:04:05.000000Z', subscribedFor: 7 });

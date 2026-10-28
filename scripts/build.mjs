@@ -4,6 +4,7 @@ import path from 'node:path';
 import * as esbuild from 'esbuild';
 import { build as viteBuild } from 'vite';
 import { versionProblems } from './release.mjs';
+import { edition } from './edition.mjs';
 import { desktopDist, desktopTargets, root, serverDist, standaloneTargets, version } from './targets.mjs';
 
 // The app, the installer (apps/desktop/package.json) and the lockfile must all carry the same version.
@@ -17,7 +18,7 @@ const started = Date.now();
 rmSync(desktopDist, { recursive: true, force: true });
 rmSync(serverDist, { recursive: true, force: true });
 
-console.log(`Building CONDUIT ${version}`);
+console.log(`Building ${edition.productName} ${version}`);
 await viteBuild({
   configFile: path.join(root, 'apps/dashboard/vite.config.ts'),
   logLevel: 'warn',

@@ -107,7 +107,7 @@ export function createServices(opts: {
   adapters?: Adapters;
   /** HTTP implementation for platform APIs (tests substitute a simulated platform). */
   fetch?: FetchLike;
-  /** Requests to Kick's website for !followage and clips (default: the platform fetch above). */
+  /** Requests to Kick's website for its unofficial data, such as !followage and clips (default: the platform fetch above). */
   kickWebFetch?: FetchLike;
   /** Where Kick clips are saved unless the user chooses a folder (default: Videos\CONDUIT Clips). */
   clipsFolder?: string;

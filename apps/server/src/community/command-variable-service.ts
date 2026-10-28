@@ -108,11 +108,12 @@ export class CommandVariableService {
       if (['points', 'level', 'xp', 'rank'].some(uses)) data.loyalty = this.o.loyalty(run.discord.guildId, run.userId);
     }
 
-    // Your Kick stream (network; fails softly).
+    // Network sources, in parallel; each one fails softly.
     const main = this.o.mainKickChannel();
     const slug = main?.slug ?? null;
     const wantsStream = [...names].some((n) => STREAM_NAMES.has(n));
-    data.stream = wantsStream && slug ? await this.streamInfo(slug, main?.name ?? slug).catch(() => null) : null;
+    const stream = wantsStream && slug ? this.streamInfo(slug, main?.name ?? slug).catch(() => null) : null;
+    data.stream = await stream;
     return data;
   }
 

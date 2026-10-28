@@ -1,7 +1,7 @@
 {
   "name": "@conduit/desktop",
   "productName": "CONDUIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "CONDUIT desktop application: Creator Management Platform",
   "author": "Retronix",
@@ -9,8 +9,8 @@
   "scripts": {
     "install-electron": "install-electron",
     "start": "node ../../scripts/start.mjs",
-    "pack:dir": "electron-builder --config electron-builder.yml --win --dir",
-    "dist": "electron-builder --config electron-builder.yml --win nsis"
+    "pack:dir": "node ../../scripts/package.mjs dir",
+    "dist": "node ../../scripts/package.mjs nsis"
   },
   "devDependencies": {
     "@conduit/database": "*",

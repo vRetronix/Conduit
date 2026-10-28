@@ -1,6 +1,6 @@
 {
   "name": "@conduit/security",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Password hashing (Argon2id), session tokens and authentication abuse controls. Server-side only.",
   "exports": {

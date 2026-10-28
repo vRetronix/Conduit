@@ -18,7 +18,8 @@ import { discordPortalUrl, KICK_DEVELOPER_SETTINGS_URL, validateAuthorizationUrl
 import { isRecoveryInvocation, refuseRecoveryWhileRunning, runRecoveryMode } from './recovery-mode';
 import { buildContentSecurityPolicy, isPermissionAllowed, isTrustedRendererUrl, mimeTypeFor, resolveRendererPath } from './renderer-security';
 
-const PRODUCT_NAME = 'CONDUIT';
+const edition = __CONDUIT_EDITION__;
+const PRODUCT_NAME = edition.productName;
 /** Height of the strip at the top of the window that holds the window buttons and drags the window (installed app). */
 const TITLE_BAR_HEIGHT = 36;
 
@@ -46,8 +47,9 @@ function parsePort(value: string | undefined): number | undefined {
 }
 
 /**
- * The data folder: CONDUIT_DATA_DIR if set, otherwise Electron's userData folder (%APPDATA%\CONDUIT). userData also
- * holds Chromium's Local State, whose DPAPI-protected key decrypts the stored platform credentials.
+ * The data folder: CONDUIT_DATA_DIR if set, otherwise Electron's userData folder (%APPDATA%\<edition data folder>,
+ * e.g. %APPDATA%\CONDUIT). userData also holds Chromium's Local State, whose DPAPI-protected key decrypts the stored
+ * platform credentials.
  */
 function resolveDesktopDataDir(): string {
   return envValue(process.env, 'CONDUIT_DATA_DIR') ?? app.getPath('userData');
@@ -326,6 +328,8 @@ function startDesktop(dataDir: string): void {
       },
     });
     mainWindow.once('ready-to-show', () => mainWindow?.show());
+    // Keep the edition's product name instead of the page's <title>.
+    mainWindow.on('page-title-updated', (event) => event.preventDefault());
     mainWindow.on('closed', () => {
       mainWindow = null;
     });
@@ -365,6 +369,11 @@ function startDesktop(dataDir: string): void {
     await createWindow();
   });
 }
+
+// Each edition has its own name and userData folder, so editions installed side by side keep separate data, credential
+// keys and single-instance locks. Must run before the lock below, which is tied to the userData folder.
+app.setName(PRODUCT_NAME);
+app.setPath('userData', path.join(app.getPath('appData'), edition.dataFolder));
 
 // The single-instance lock comes first: it keeps two launches from racing the data-folder migration, and in
 // recovery mode it proves CONDUIT is not running.

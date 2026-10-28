@@ -7,7 +7,10 @@ import path from 'node:path';
 /** Database file name inside the data directory. */
 export const DATABASE_FILE = 'conduit.db';
 
-/** Default data folder without Electron: %APPDATA%\CONDUIT on Windows, ~/.conduit elsewhere. */
+/** The edition's data folder name; "CONDUIT" where no edition is built in (tests). */
+const dataFolder = typeof __CONDUIT_EDITION__ === 'object' ? __CONDUIT_EDITION__.dataFolder : 'CONDUIT';
+
+/** Default data folder without Electron: %APPDATA%\<edition data folder> on Windows, ~/.conduit elsewhere. */
 export function defaultDataDirectory(env: NodeJS.ProcessEnv, homedir: string): string {
-  return env.APPDATA ? path.join(env.APPDATA, 'CONDUIT') : path.join(homedir, '.conduit');
+  return env.APPDATA ? path.join(env.APPDATA, dataFolder) : path.join(homedir, '.conduit');
 }

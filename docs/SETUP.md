@@ -1052,13 +1052,13 @@ Signing in keeps you signed in across app restarts for up to **14 days**, or unt
 ## Building the installer
 
 ```powershell
-npm run dist      # → apps/desktop/release/CONDUIT Setup 1.0.0.exe
+npm run dist      # → apps/desktop/release/CONDUIT Setup X.Y.Z.exe
 npm run pack:dir  # → apps/desktop/release/win-unpacked/CONDUIT.exe (quick check, no installer)
 ```
 
 The installer is a per-user NSIS installer. By default it installs to `%LOCALAPPDATA%\Programs\CONDUIT`, and you can
 choose another folder. It creates Start-menu and desktop shortcuts named **CONDUIT** and an Add/Remove Programs entry
-("CONDUIT 1.0.0", Retronix). It runs silently with `"CONDUIT Setup 1.0.0.exe" /S` (optionally
+("CONDUIT X.Y.Z", Retronix). It runs silently with `"CONDUIT Setup X.Y.Z.exe" /S` (optionally
 `/D=<folder>` as the last argument), and `"Uninstall CONDUIT.exe" /S` removes it. Uninstalling never deletes
 your data folder.
 

@@ -1,10 +1,10 @@
 /**
- * A viewer's follow date from Kick's own website API (kick.com/api/v2/…), for !followage: Kick's official public API
- * doesn't offer it.
+ * Public data from Kick's own website API (kick.com/api/v2/…) that Kick's official public API doesn't offer:
+ * - a viewer's follow date, for !followage.
  *
  * This API is unofficial and undocumented: Kick can change or block it at any time. So everything here is best effort
- * and fails softly — any problem gives null (the command then says it couldn't check), never an error:
- * - only public, read-only lookups of a viewer in a channel; no tokens or credentials are ever sent;
+ * and fails softly — any problem gives null (the caller then uses a fallback or says it couldn't check), never an error:
+ * - only public, read-only lookups; no tokens or credentials are ever sent;
  * - names are checked before they're put in a URL, so a chat message can't steer the request anywhere else;
  * - short time limit and size cap; answers are cached for a few minutes, so commands don't hit Kick each time;
  * - when Kick refuses (403 / 429 / 5xx), lookups pause for a while instead of retrying.
@@ -58,7 +58,7 @@ export class KickWebData {
       });
       if (res.status === 403 || res.status === 429 || res.status >= 500) {
         this.pausedUntil = now + PAUSE_MS;
-        this.o.onProblem?.(`Kick's website refused the request (HTTP ${res.status}); !followage pauses for 10 minutes.`);
+        this.o.onProblem?.(`Kick's website refused the request (HTTP ${res.status}); lookups pause for 10 minutes.`);
         await res.body?.cancel().catch(() => undefined);
         return null;
       }

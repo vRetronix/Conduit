@@ -14,7 +14,15 @@
 
 export type VariablePlatform = 'kick' | 'discord';
 
-export const VARIABLE_GROUPS = ['input', 'stream', 'random', 'counters', 'time', 'kick', 'discord'] as const;
+export const VARIABLE_GROUPS = [
+  'input',
+  'stream',
+  'random',
+  'counters',
+  'time',
+  'kick',
+  'discord',
+] as const;
 export type VariableGroup = (typeof VARIABLE_GROUPS)[number];
 
 export const VARIABLE_GROUP_LABEL: Record<VariableGroup, string> = {
@@ -85,7 +93,7 @@ export const VARIABLES: readonly VariableInfo[] = [
   { name: 'rank', group: 'discord', platforms: DISCORD, description: 'The user’s XP rank in the server', insert: '{rank}' },
 ];
 
-/** Every name a template may use (the catalogue plus {2}…{9}). */
+/** Every name a template may use (the catalogue plus the forms it describes, such as {2}…{9}). */
 const NAMES = new Map<string, VariableInfo>();
 for (const v of VARIABLES) NAMES.set(v.name, v);
 for (let n = 2; n <= 9; n++) NAMES.set(String(n), NAMES.get('1')!);
@@ -405,8 +413,10 @@ function valueOf(t: VariableToken, d: VariableData, platform: VariablePlatform):
       return num(d.loyalty?.xp);
     case 'rank':
       return d.loyalty?.rank ? `#${d.loyalty.rank}` : null;
-    default:
-      return /^[1-9]$/.test(t.name) ? (words(d.args)[Number(t.name) - 1] ?? null) : null;
+    default: {
+      if (/^[1-9]$/.test(t.name)) return words(d.args)[Number(t.name) - 1] ?? null;
+      return null;
+    }
   }
 }
 

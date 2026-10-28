@@ -34,7 +34,6 @@ describe('parsing', () => {
     expect(unknownVariables('{mention} {points}', 'kick')).toEqual(['{mention}', '{points}']);
     expect(unknownVariables('{submonths} {followage}', 'discord')).toEqual(['{submonths}', '{followage}']);
     expect(unknownVariables('{user} {2} {9}', 'kick')).toEqual([]);
-    expect(unknownVariables('{followers} {followage} {touser.followage} {sender.bio} {streamer.youtube}', 'kick')).toHaveLength(5); // no Kick website data
     expect(unknownVariables('{10}', 'kick')).toEqual([]); // not a placeholder at all: posted as written
   });
 

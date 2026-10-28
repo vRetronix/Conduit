@@ -416,12 +416,6 @@ describe('running commands from live chat (simulated Kick)', () => {
       expect(['Winner: Fan1', 'Winner: Fan2']).toContain(kick.posted[1]!.content);
     });
 
-    it('Kick website data (followers, follow age, bios, socials) is not a variable', async () => {
-      for (const v of ['{followers}', '{followage}', '{touser.followage}', '{streamer.bio}', '{sender.twitter}']) {
-        expect((await create({ trigger: '!stats', response: `Hi ${v}` })).status).toBe(400);
-      }
-    });
-
     it('variables from the other platform are rejected when saving', async () => {
       const res = await create({ trigger: '!x', response: 'Hi {mention}' });
       expect(res.status).toBe(400);

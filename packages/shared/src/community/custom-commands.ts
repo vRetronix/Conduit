@@ -47,9 +47,16 @@ export function unknownVariables(template: string, platform?: CommandPlatform): 
   return unsupportedVariables(template, platform);
 }
 
+/** Variables that read text typed after the command (besides {1}…{9}). */
+const COMMAND_TEXT_VARIABLES = [
+  'args',
+  'message',
+  'touser',
+];
+
 /** Whether a reply reads text typed after the command (Discord then offers the optional "text" box). */
 export function usesCommandText(template: string): boolean {
-  return variableTokens(template).some((t) => ['args', 'message', 'touser'].includes(t.name) || /^[1-9]$/.test(t.name));
+  return variableTokens(template).some((t) => COMMAND_TEXT_VARIABLES.includes(t.name) || /^[1-9]$/.test(t.name));
 }
 
 const graphemes = (s: string) => [...new Intl.Segmenter().segment(s)].map((g) => g.segment);

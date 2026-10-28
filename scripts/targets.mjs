@@ -1,6 +1,7 @@
 // esbuild bundle definitions shared by build.mjs and dev.mjs.
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { edition } from './edition.mjs';
 
 export const root = path.resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -17,7 +18,10 @@ const common = {
   target: 'node24',
   sourcemap: 'linked',
   logLevel: 'warning',
-  define: { __CONDUIT_VERSION__: JSON.stringify(version) },
+  define: {
+    __CONDUIT_VERSION__: JSON.stringify(version),
+    __CONDUIT_EDITION__: JSON.stringify({ id: edition.id, productName: edition.productName, dataFolder: edition.dataFolder }),
+  },
 };
 
 /** Builds everything into the desktop app's dist folder (what Electron loads and electron-builder packages). */

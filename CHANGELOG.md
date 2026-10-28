@@ -9,6 +9,13 @@ first). It becomes the next version when a release is prepared.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-27
+
+### Changed
+- **Build:** the app's name, app id and data folder now come from one place (`scripts/edition.mjs`). Nothing changes
+  for you: it is still "CONDUIT" and keeps its data in `%APPDATA%\CONDUIT`.
+- **Setup guide:** the installer's name is shown as `CONDUIT Setup X.Y.Z.exe` (the version you build).
+
 ## [1.0.0] - 2026-10-25
 
 The first release of CONDUIT: one desktop app for running your Discord and Kick from one place. It starts empty;
