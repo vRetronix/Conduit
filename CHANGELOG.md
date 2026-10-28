@@ -15,6 +15,7 @@ first). It becomes the next version when a release is prepared.
 - **Giveaways:** the **Kick Messages** tab is now called **Messages**.
 - **Menu bar:** the File, Edit, View and Window menu bar is gone, also when running CONDUIT from source.
 - **Discord Logs → Moderation log:** shorter, easier description at the top.
+- **README:** install steps now build the installer yourself, since there's no ready-made download yet.
 
 ## [1.0.1] - 2026-10-27
 

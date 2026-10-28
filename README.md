@@ -12,18 +12,28 @@ yourself. Your tokens are encrypted and stay on your PC.
 
 ## Install
 
-1. Download **CONDUIT Setup 1.0.0.exe** and run it.
-2. If Windows shows "Windows protected your PC", select **More info → Run anyway**.
-3. Open CONDUIT and select **Connect** on Discord or Kick to start.
+There's no ready-made download yet, so you build the installer yourself. It takes a few minutes.
 
-Step-by-step setup: [docs/SETUP.md](docs/SETUP.md). What's in this version: [CHANGELOG.md](CHANGELOG.md).
+1. Install [Node.js](https://nodejs.org/) 24.7 or newer.
+2. Get the code: select **Code → Download ZIP** above and unzip it, or use Git:
+   ```powershell
+   git clone https://github.com/vRetronix/Conduit.git
+   ```
+3. Open PowerShell in the CONDUIT folder and build the installer:
+   ```powershell
+   npm run setup
+   npm run dist
+   ```
+4. Run **apps\desktop\release\CONDUIT Setup X.Y.Z.exe**. If Windows shows "Windows protected your PC", select
+   **More info → Run anyway**.
+5. Open CONDUIT and select **Connect** on Discord or Kick to start.
 
-## Building from source
+Step-by-step setup: [docs/SETUP.md](docs/SETUP.md). What's changed: [CHANGELOG.md](CHANGELOG.md).
 
-Requires Node.js 24.7 or newer.
+## Development
 
 ```powershell
-npm run setup   # install
-npm run dev     # run in development
-npm run dist    # build the installer
+npm run setup    # once
+npm run dev      # run CONDUIT with live reload
+npm run verify   # type checks, tests and build
 ```
