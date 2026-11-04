@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { discordPortalUrl, validateAuthorizationUrl, validateBotInstallUrl } from '../../apps/desktop/src/oauth-launch';
 import { DiscordAdapter } from '../../apps/server/src/discord/discord';
 import { PendingAuthorizations } from '../../apps/server/src/app/oauth';
+import { TwitchAdapter } from '../../apps/server/src/twitch/twitch';
 
 const good =
   'https://discord.com/oauth2/authorize?client_id=123456789012345678&response_type=code&scope=identify&state=abc&redirect_uri=http%3A%2F%2F127.0.0.1%3A47821%2Foauth%2Fdiscord%2Fcallback&prompt=consent';
@@ -38,6 +39,32 @@ describe('validateAuthorizationUrl (what the desktop will open in the browser)',
   it('opens nothing for platforms without an implemented authorization', () => {
     expect(validateAuthorizationUrl('kick', good)).toBeNull();
     expect(validateAuthorizationUrl('twitch', good)).toBeNull();
+    expect(validateAuthorizationUrl('youtube', good)).toBeNull();
+  });
+});
+
+describe('validateAuthorizationUrl for Twitch', () => {
+  const adapter = new TwitchAdapter({ credentials: async () => ({ clientId: 'twitchclientid0000000000000001', clientSecret: 'x'.repeat(30) }) });
+  const generated = async () => {
+    const pending = new PendingAuthorizations().start('twitch', 'http://localhost:47821/oauth/twitch/callback', adapter.usesPkce);
+    return adapter.authorizationUrl({ state: pending.state, redirectUri: pending.redirectUri, codeChallenge: pending.codeChallenge });
+  };
+
+  it('accepts exactly what the Twitch adapter generates: id.twitch.tv, code flow, the localhost callback', async () => {
+    const url = await generated();
+    expect(validateAuthorizationUrl('twitch', url)).toBe(url);
+  });
+
+  it.each([
+    ['another site', (u: URL) => (u.hostname = 'id.twitch.tv.evil.example')],
+    ['another path', (u: URL) => (u.pathname = '/oauth2/token')],
+    ['implicit flow', (u: URL) => u.searchParams.set('response_type', 'token')],
+    ['a 127.0.0.1 redirect', (u: URL) => u.searchParams.set('redirect_uri', 'http://127.0.0.1:47821/oauth/twitch/callback')],
+    ["Kick's callback", (u: URL) => u.searchParams.set('redirect_uri', 'http://localhost:47821/oauth/kick/callback')],
+  ])('rejects %s', async (_label, mutate) => {
+    const url = new URL(await generated());
+    mutate(url);
+    expect(validateAuthorizationUrl('twitch', url.toString())).toBeNull();
   });
 });
 

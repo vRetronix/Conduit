@@ -4,16 +4,14 @@ import { Button } from './forms';
 import { PlatformIcon } from './PlatformIcon';
 
 /**
- * The shared shell of every platform setup wizard (Discord, Kick): dialog, header, numbered step list, the current
- * step's title and description, and Back / Continue / Done. Each platform supplies only its steps and their content,
- * so both setups look and behave the same while keeping their own workflows.
+ * The shared shell of every platform setup wizard (Discord, Kick, Twitch): dialog, header, numbered step list, the
+ * current step's content, and Back / Continue / Done. Each platform supplies only its steps and their content, so the
+ * setups look and behave the same while keeping their own workflows.
  */
 
 export interface WizardStep<T extends string> {
   id: T;
   label: string;
-  /** One line under the step title. */
-  description: string;
   /** Verified complete (from backend state, never from having clicked through). */
   complete: boolean;
   /** Whether the user may open it yet (earlier steps it depends on are done). */
@@ -60,9 +58,6 @@ export function SetupWizard<T extends string>({ platform, title, steps, current,
           <PlatformIcon platform={platform} size={32} />
           <div className="wizard-title">
             <h2 id={titleId}>{title}</h2>
-            <span className="muted small">
-              Step {index + 1} of {steps.length} · {step.label}
-            </span>
           </div>
           <Button variant="ghost" onClick={onClose} aria-label={`Close ${title}`}>
             Close
@@ -79,11 +74,7 @@ export function SetupWizard<T extends string>({ platform, title, steps, current,
           ))}
         </ol>
 
-        <div className="wizard-body">
-          <div className="step-intro">
-            <h3 className="step-title">{step.label}</h3>
-            <p className="muted small">{step.description}</p>
-          </div>
+        <div className="wizard-body" aria-label={step.label}>
           {children}
         </div>
 

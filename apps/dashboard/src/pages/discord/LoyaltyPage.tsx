@@ -195,12 +195,7 @@ function OverviewPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => vo
     <div className="stack">
       <section className="card" aria-labelledby="loyalty-overview-title">
         <div className="card-head">
-          <div>
-            <h2 id="loyalty-overview-title">Discord loyalty</h2>
-            <p className="muted small">
-              Members earn <strong>XP</strong> for chatting and level up (XP is never spent). <strong>{capitalize(name)}</strong> are a separate balance they spend on rewards. XP and {name} are never converted into each other.
-            </p>
-          </div>
+          <h2 id="loyalty-overview-title">Discord loyalty</h2>
           <label className="switch">
             <input type="checkbox" aria-label={`Loyalty: ${s.settings.enabled ? 'on' : 'off'}`} checked={s.settings.enabled} disabled={busy} onChange={(e) => void run(() => api('POST', '/api/loyalty/settings', { ...s.settings, enabled: e.target.checked }))} />
           </label>
@@ -222,11 +217,6 @@ function OverviewPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => vo
             XP {s.settings.xp.enabled ? 'on' : 'off'} · {name} from messages {s.settings.discord.earn ? 'on' : 'off'} · commands {s.settings.discord.commands ? 'on' : 'off'} · level-up announcements {s.settings.xp.announce.enabled ? 'on' : 'off'} · {s.roleRewards.length} role reward{s.roleRewards.length === 1 ? '' : 's'}
           </li>
           {s.discord.commandConflicts.length > 0 && <li className="small text-warn">Your custom {s.discord.commandConflicts.join(', ')} command is used instead of the loyalty one.</li>}
-          {s.stats.legacyKick.accounts > 0 && (
-            <li className="small muted">
-              Loyalty is Discord-only. {num(s.stats.legacyKick.accounts)} older Kick balance{s.stats.legacyKick.accounts === 1 ? '' : 's'} ({num(s.stats.legacyKick.points)} {name}) are kept as history and can’t be earned or spent.
-            </li>
-          )}
         </ul>
         {s.problems.length > 0 && (
           <>
@@ -261,26 +251,21 @@ function LevelsPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => void
       <section className="card" aria-labelledby="xp-title">
         <h2 id="xp-title">XP from messages</h2>
         <label className="inline-check">
-          <input type="checkbox" checked={xp.enabled} onChange={(e) => setXp({ enabled: e.target.checked })} /> Members earn XP for messages (switching off keeps everyone’s XP and levels)
+          <input type="checkbox" checked={xp.enabled} onChange={(e) => setXp({ enabled: e.target.checked })} /> Members earn XP for messages
         </label>
         <div className="editor-row">
           <input aria-label="Minimum XP" className="num" type="number" min={1} max={1000} value={xp.minXp} disabled={!xp.enabled} onChange={(e) => setXp({ minXp: Number(e.target.value) })} />
-          <span className="muted small">to</span>
+          <span>to</span>
           <input aria-label="Maximum XP" className="num" type="number" min={1} max={1000} value={xp.maxXp} disabled={!xp.enabled} onChange={(e) => setXp({ maxXp: Number(e.target.value) })} />
-          <span className="muted small">XP per message (random), at most once every</span>
+          <span>XP per message, at most every</span>
           <input aria-label="XP cooldown seconds" className="num" type="number" min={10} max={3600} value={xp.cooldownSeconds} disabled={!xp.enabled} onChange={(e) => setXp({ cooldownSeconds: Number(e.target.value) })} />
-          <span className="muted small">seconds per member</span>
+          <span>seconds</span>
         </div>
         {(err('minXp') || err('maxXp') || err('cooldownSeconds')) && <span className="field-error">{err('minXp') ?? err('maxXp') ?? err('cooldownSeconds')}</span>}
         <label className="inline-check">
           <input type="checkbox" checked={xp.ignoreRepeats} disabled={!xp.enabled} onChange={(e) => setXp({ ignoreRepeats: e.target.checked })} /> No XP for repeating the same message
         </label>
-        <p className="muted small">
-          {s.discord.contentAvailable
-            ? 'Repeats are recognised (the bot receives message text).'
-            : 'Repeats can only be recognised while the bot receives message text (the Message Content intent, e.g. turned on for Discord Logging). CONDUIT never turns it on for this; the cooldown always applies.'}{' '}
-          Bots, webhooks and system messages never earn. XP is kept per server, also when a member leaves and comes back.
-        </p>
+        {!s.discord.contentAvailable && xp.ignoreRepeats && <p className="small text-warn">Repeats can’t be recognised without the Message Content intent.</p>}
         <LevelTable />
       </section>
 
@@ -337,7 +322,6 @@ function LevelsPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => void
           xp.announce.template && <EmbedPreview embed={null} content={renderPreview(xp.announce.template)} note="Sample values: alice reaching level 5." />
         )}
         {err('announce.embed') && <span className="field-error">{err('announce.embed')}</span>}
-        <p className="muted small">Each level is announced once, even after a restart. {'{user}'} shows as a mention without notifying anyone. If a post fails, the XP and level are kept and the problem is shown on Overview.</p>
         <SaveRow busy={busy} error={error} saved={saved} onSave={() => void save()} />
       </section>
 
@@ -355,9 +339,6 @@ function LevelTable() {
   return (
     <details className="loyalty-formula">
       <summary className="small">How levels work</summary>
-      <p className="small muted">
-        Going from level L to the next takes 5 × L² + 50 × L + 100 XP (100, 155, 220, 295, …). A member’s level always follows from their total XP, so it is recalculated after any adjustment.
-      </p>
       <table className="table">
         <thead>
           <tr>
@@ -394,9 +375,6 @@ function RoleRewardsSection({ s, onChanged }: { s: LoyaltyState; onChanged?: () 
   return (
     <section className="card" aria-labelledby="role-rewards-title">
       <h2 id="role-rewards-title">Role rewards</h2>
-      <p className="muted small">
-        Give a Discord role when a member reaches a level. The bot needs <strong>Manage Roles</strong>, and its own highest role must be above the role. Removing a role reward never takes the role away from members who already have it.
-      </p>
       {s.roleRewards.length === 0 ? (
         <p className="empty-note">No role rewards yet.</p>
       ) : (
@@ -495,10 +473,7 @@ function MembersPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => voi
     <div className="stack">
       <section className="card" aria-labelledby="members-title">
         <div className="card-head">
-          <div>
-            <h2 id="members-title">Members</h2>
-            <p className="muted small">The leaderboard for a server. XP and levels are per server; {name} are one balance per Discord account.</p>
-          </div>
+          <h2 id="members-title">Members</h2>
         </div>
         <div className="editor-row">
           {s.guilds.length > 1 && (
@@ -751,9 +726,6 @@ function PointsPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => void
   return (
     <section className="card" aria-labelledby="points-title">
       <h2 id="points-title">{capitalize(d.pointsName || 'points')} &amp; earning</h2>
-      <p className="muted small">
-        {capitalize(d.pointsName || 'points')} are spent on rewards. They are separate from XP: earning XP never gives {d.pointsName}, and spending {d.pointsName} never takes XP. Administrators can always add or remove {d.pointsName} under Members.
-      </p>
       <label className="field">
         <span className="field-label">What points are called</span>
         <input value={d.pointsName} maxLength={20} onChange={(e) => setD({ ...d, pointsName: e.target.value })} />
@@ -762,18 +734,18 @@ function PointsPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => void
       <fieldset className="editor-block">
         <legend>From messages</legend>
         <label className="inline-check">
-          <input type="checkbox" checked={c.earn} onChange={(e) => set({ earn: e.target.checked })} /> Messages also earn {d.pointsName} (in addition to XP)
+          <input type="checkbox" checked={c.earn} onChange={(e) => set({ earn: e.target.checked })} /> Messages earn {d.pointsName}
         </label>
         <div className="editor-row">
           <input aria-label="Points per message" className="num" type="number" min={1} max={1000} value={c.pointsPerMessage} disabled={!c.earn} onChange={(e) => set({ pointsPerMessage: Number(e.target.value) })} />
-          <span className="muted small">per message, at most once every</span>
+          <span>per message, at most every</span>
           <input aria-label="Points cooldown seconds" className="num" type="number" min={10} max={3600} value={c.cooldownSeconds} disabled={!c.earn} onChange={(e) => set({ cooldownSeconds: Number(e.target.value) })} />
-          <span className="muted small">seconds per member</span>
+          <span>seconds</span>
         </div>
         <div className="editor-row">
-          <span className="muted small">Daily limit per member</span>
+          <span>Daily limit</span>
           <input aria-label="Points daily limit" className="num" type="number" min={0} value={c.dailyLimit} disabled={!c.earn} onChange={(e) => set({ dailyLimit: Number(e.target.value) })} />
-          <span className="muted small">(0 = no limit; days are UTC)</span>
+          <span className="muted small" title="Days are UTC">0 = no limit</span>
         </div>
         {Object.entries(errors)
           .filter(([k]) => k.startsWith('discord.'))
@@ -811,12 +783,7 @@ function RewardsPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () => voi
     <div className="stack">
       <section className="card" aria-labelledby="rewards-title">
         <div className="card-head">
-          <div>
-            <h2 id="rewards-title">Rewards</h2>
-            <p className="muted small">
-              Members redeem with <code>/redeem</code> on Discord. You deliver each reward yourself; CONDUIT only takes the {s.settings.pointsName} and lists the redemption.
-            </p>
-          </div>
+          <h2 id="rewards-title">Rewards</h2>
           {!editing && <Button onClick={() => setEditing({ mode: 'new' })}>New reward</Button>}
         </div>
         {s.rewards.length === 0 && !editing ? (
@@ -934,7 +901,7 @@ function RewardEditor({ initial, onClose, onSaved }: { initial: LoyaltyRewardVie
           <input type="checkbox" checked={limited} onChange={(e) => setLimited(e.target.checked)} /> Limited quantity
         </label>
         <input aria-label="Quantity left" className="num" type="number" min={0} value={stock} disabled={!limited} onChange={(e) => setStock(Number(e.target.value))} />
-        <span className="muted small">left (a rejected redemption puts one back)</span>
+        <span>left</span>
       </div>
       {errors.stock && <span className="field-error">{errors.stock}</span>}
       <div className="card-foot">
@@ -964,7 +931,6 @@ function RedemptionsPanel({ s, onChanged }: { s: LoyaltyState; onChanged?: () =>
     <div className="stack">
       <section className="card" aria-labelledby="pending-title">
         <h2 id="pending-title">Waiting for you</h2>
-        <p className="muted small">The {s.settings.pointsName} are taken when a member redeems. Deliver the reward yourself, then mark it fulfilled — or reject it to give the {s.settings.pointsName} back.</p>
         {pending.length === 0 ? (
           <p className="empty-note">No redemptions waiting.</p>
         ) : (

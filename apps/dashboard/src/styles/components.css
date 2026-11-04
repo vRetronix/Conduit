@@ -814,19 +814,6 @@ input.num {
   background: var(--accent-soft);
 }
 
-.step-intro {
-  margin-bottom: 16px;
-}
-
-.step-title {
-  margin: 0;
-  font-size: 16px;
-}
-
-.step-intro p {
-  margin: 2px 0 0;
-}
-
 .portal-tag {
   margin-left: 6px;
   padding: 1px 7px;

@@ -4,7 +4,8 @@
  * uses its fallback), so a slow or unavailable source can never break a command.
  *
  * - Counters ({count}, {counter:name…}) are stored in the database and change only when a command that uses them runs.
- * - Your Kick stream ({title}, {uptime}…) comes from Kick's official public API, cached for 30 seconds.
+ * - Your stream ({title}, {uptime}…): for Twitch commands your Twitch stream (Twitch's Helix API), otherwise your Kick
+ *   stream (Kick's official public API); each cached for 30 seconds.
  * - {randomuser} picks from people who chatted recently (kept in memory only, never message text).
  */
 import { commandCountersRepo, type Database } from '@conduit/database';
@@ -23,11 +24,12 @@ export interface CommandRun {
   user: string;
   userId: string;
   channel: string | null;
-  /** Where recent chatters are tracked for {randomuser}: the Kick channel, or the Discord server. */
+  /** Where recent chatters are tracked for {randomuser}: the Kick or Twitch channel, or the Discord server. */
   chatKey: string;
   args: string;
   message: string;
-  kick?: { roles: string[]; subMonths: number | null };
+  /** Kick and Twitch: the chatter's badges and subscriber months. */
+  chat?: { roles: string[]; subMonths: number | null };
   discord?: { guildId: string };
 }
 
@@ -39,6 +41,10 @@ export interface CommandVariableServiceOptions {
   mainKickChannel: () => { slug: string | null; name: string | null } | null;
   /** Your Kick channel's live status from Kick's official API. */
   kickChannelInfo: (slug: string) => Promise<{ live: boolean; title: string | null; category: string | null; viewers: number | null; startedAt: string | null } | null>;
+  /** Your main Twitch channel (login and name), when connected. */
+  mainTwitchChannel: () => { slug: string | null; name: string | null } | null;
+  /** Your Twitch channel's live status from Twitch's Helix API. */
+  twitchChannelInfo: (login: string) => Promise<{ live: boolean; title: string | null; category: string | null; viewers: number | null; startedAt: string | null } | null>;
   loyalty: (guildId: string, userId: string) => VariableData['loyalty'];
   discordGuild: (guildId: string) => { name: string; memberCount: number | null } | null;
   /** The commands people can use on a platform, for {commands}. */
@@ -47,7 +53,7 @@ export interface CommandVariableServiceOptions {
 }
 
 export class CommandVariableService {
-  private stream: { at: number; value: StreamVariables | null } | null = null;
+  private readonly stream = new Map<'kick' | 'twitch', { at: number; value: StreamVariables | null }>();
   private readonly chatters = new Map<string, string[]>();
 
   constructor(private readonly o: CommandVariableServiceOptions) {}
@@ -75,8 +81,8 @@ export class CommandVariableService {
       message: run.message,
       now: this.o.now(),
       random: this.o.random,
-      roles: run.kick?.roles,
-      subMonths: run.kick?.subMonths ?? null,
+      roles: run.chat?.roles,
+      subMonths: run.chat?.subMonths ?? null,
       mention: run.platform === 'discord' ? `<@${run.userId}>` : null,
     };
 
@@ -112,26 +118,37 @@ export class CommandVariableService {
     const main = this.o.mainKickChannel();
     const slug = main?.slug ?? null;
     const wantsStream = [...names].some((n) => STREAM_NAMES.has(n));
-    const stream = wantsStream && slug ? this.streamInfo(slug, main?.name ?? slug).catch(() => null) : null;
+    const twitchMain = run.platform === 'twitch' ? this.o.mainTwitchChannel() : null;
+    const stream = !wantsStream
+      ? null
+      : run.platform === 'twitch'
+        ? twitchMain?.slug
+          ? this.streamInfo('twitch', twitchMain.slug, twitchMain.name ?? twitchMain.slug).catch(() => null)
+          : null
+        : slug
+          ? this.streamInfo('kick', slug, main?.name ?? slug).catch(() => null)
+          : null;
     data.stream = await stream;
     return data;
   }
 
-  private async streamInfo(slug: string, name: string): Promise<StreamVariables | null> {
+  private async streamInfo(platform: 'kick' | 'twitch', slug: string, name: string): Promise<StreamVariables | null> {
     const now = this.o.now().getTime();
-    if (this.stream && now - this.stream.at < STREAM_CACHE_MS) return this.stream.value;
-    const info = await this.o.kickChannelInfo(slug).catch(() => null);
+    const cached = this.stream.get(platform);
+    if (cached && now - cached.at < STREAM_CACHE_MS) return cached.value;
+    const info = await (platform === 'twitch' ? this.o.twitchChannelInfo(slug) : this.o.kickChannelInfo(slug)).catch(() => null);
     const value: StreamVariables = {
       streamer: name,
-      url: `https://kick.com/${slug}`,
+      url: platform === 'twitch' ? `https://twitch.tv/${slug}` : `https://kick.com/${slug}`,
       live: info?.live ?? false,
       title: info?.title ?? null,
       category: info?.category ?? null,
       viewers: info?.viewers ?? null,
       startedAt: info?.startedAt ?? null,
     };
-    // Kick unreachable: no stream values (variables use their fallback), rather than claiming you're offline.
-    this.stream = { at: now, value: info ? value : null };
-    return this.stream.value;
+    // Unreachable: no stream values (variables use their fallback), rather than claiming you're offline.
+    const entry = { at: now, value: info ? value : null };
+    this.stream.set(platform, entry);
+    return entry.value;
   }
 }

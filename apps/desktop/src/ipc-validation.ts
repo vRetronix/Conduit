@@ -27,8 +27,8 @@ const ALLOWED: ReadonlyArray<{ method: ApiMethod; path: RegExp }> = [
   { method: 'POST', path: /^\/api\/discord\/(?:application|install\/cancel|installation\/check|bot\/restart|commands\/register|reset)$/ },
   // Kick setup. Connecting accounts goes through the connections.connect IPC (it returns an authorization URL).
   { method: 'GET', path: /^\/api\/kick\/setup$/ },
-  // Commands hub: per platform (discord | kick) list/create, and edit/delete one custom command by id (UUID).
-  { method: 'GET', path: /^\/api\/commands\/(?:discord|kick)$/ },
+  // Commands hub: per platform (discord | kick | twitch) list/create, and edit/delete one custom command by id (UUID).
+  { method: 'GET', path: /^\/api\/commands\/(?:discord|kick|twitch)$/ },
   // Commands → Discord: categories, Command Permissions and the bot's presence (Status / Rich Presence Updates).
   { method: 'GET', path: /^\/api\/discord\/(?:commands|presence)$/ },
   { method: 'POST', path: /^\/api\/discord\/(?:command-access|presence)$/ },
@@ -44,11 +44,15 @@ const ALLOWED: ReadonlyArray<{ method: ApiMethod; path: RegExp }> = [
   { method: 'POST', path: /^\/api\/discord\/protection\/(?:messages|automod\/\d{17,20}(?:\/[0-9a-f-]{36}\/enabled)?)$/ },
   { method: 'PATCH', path: /^\/api\/discord\/protection\/automod\/\d{17,20}\/[0-9a-f-]{36}$/ },
   { method: 'DELETE', path: /^\/api\/discord\/protection\/automod\/\d{17,20}\/[0-9a-f-]{36}$/ },
-  { method: 'POST', path: /^\/api\/commands\/(?:discord|kick)$/ },
+  { method: 'POST', path: /^\/api\/commands\/(?:discord|kick|twitch)$/ },
   { method: 'POST', path: /^\/api\/kick\/default-commands$/ },
-  { method: 'PATCH', path: /^\/api\/commands\/(?:discord|kick)\/[0-9a-f-]{36}$/ },
-  { method: 'DELETE', path: /^\/api\/commands\/(?:discord|kick)\/[0-9a-f-]{36}$/ },
+  { method: 'PATCH', path: /^\/api\/commands\/(?:discord|kick|twitch)\/[0-9a-f-]{36}$/ },
+  { method: 'DELETE', path: /^\/api\/commands\/(?:discord|kick|twitch)\/[0-9a-f-]{36}$/ },
   { method: 'POST', path: /^\/api\/kick\/(?:application|chatbot|chat\/send|chat\/retry)$/ },
+  // Twitch setup: the app details (secret write-only), the chatbot choice, sending and retrying chat. Connecting the
+  // accounts goes through the connections.connect IPC.
+  { method: 'GET', path: /^\/api\/twitch\/setup$/ },
+  { method: 'POST', path: /^\/api\/twitch\/(?:application|chatbot|chat\/send|chat\/retry)$/ },
   // Kick → Clips.
   { method: 'GET', path: /^\/api\/kick\/clips$/ },
   { method: 'POST', path: /^\/api\/kick\/clips(?:\/refresh)?$/ },

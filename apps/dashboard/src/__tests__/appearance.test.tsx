@@ -138,7 +138,7 @@ describe('Settings → Appearance & Themes', () => {
     for (const name of ['CONDUIT Default', 'Theme Name 1', 'Retronix Theme', 'SnixSnacks Theme']) expect(t).toContain(name);
     expect(t).not.toContain('Theme Name 2');
     expect((html.match(/class="theme-mini-art"/g) ?? []).length).toBe(2); // the Retronix character and the SnixSnacks vending machine
-    expect(t).toMatch(/CONDUIT Default .* Applied/);
+    expect(t).toMatch(/CONDUIT Default Applied/);
     expect((t.match(/Preview Apply/g) ?? []).length).toBe(4);
     for (const gone of ['Glass', 'Interface density', 'Compact', 'Spacious']) expect(t).not.toContain(gone);
     expect(t).toContain('Show a test notification');

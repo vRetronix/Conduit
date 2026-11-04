@@ -9,6 +9,43 @@ first). It becomes the next version when a release is prepared.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-04
+
+### Added
+- **Twitch:** connect Twitch on the Dashboard with your own Twitch app (Client ID and Client Secret from the Twitch
+  Developer Console) and your Twitch account. As Twitch requires, CONDUIT checks the authorization every hour while it
+  runs, and **Disconnect** revokes it at Twitch.
+- **Twitch → Twitch Notifications:** Discord posts when Twitch streamers (yours or anyone's) go live, just like Kick
+  Notifications: one post per stream, the Twitch-purple default layout, the live preview as the image (kept current),
+  **Send test**, and deleting the post when the stream ends.
+- **Twitch chat:** CONDUIT receives your Twitch channel's chat through Twitch's EventSub connection. CONDUIT opens
+  this connection itself, so Twitch needs no tunnel. It reconnects on its own when the connection drops. Dashboard →
+  Twitch → Manage → **Live Chat** shows the status and the latest messages, and lets you send a test message.
+- **Twitch chatbot:** the chatbot posts as your main Twitch account or as a separate bot account (**Manage →
+  Chatbot**), like Kick. The main account asks for `user:read:chat` (and `user:write:chat` when it is the chatbot).
+  A bot account asks only for `user:write:chat`. Make a separate bot account a moderator (`/mod YourBotName`).
+- **Commands → Twitch:** custom commands for Twitch chat, with variables, permissions (Twitch's moderator,
+  subscriber and founder badges) and cooldowns.
+- **Timed Messages → Twitch chat:** timed messages can post in your Twitch chat, every X minutes and/or after X chat
+  messages.
+
+### Changed
+- **Stream notifications** are now one feature for every platform: Kick and Twitch streamers are checked side by
+  side, each with its own app. Kick Notifications work as before.
+- **Command variables:** the groups are now **Your stream** and **Kick and Twitch chat**.
+- **A simpler CONDUIT:** every page now shows only what you use. The explanations under page titles, cards, fields and
+  setup steps are gone, along with the sidebar tagline and the version (it's in Settings). Details that still help are
+  on hover: what a default command does and an example, who a permission level includes, when CONDUIT last checked.
+- **Page actions at the top right:** **New sticky**, **New timed message**, **New giveaway**, **Check now** and **Add
+  streamer** sit next to the page title.
+- **Sidebar:** YouTube is one *Soon* heading, and OBS Overlays is one *Soon* item. "Made by Retronix" sits next to
+  **Settings**. The backend status shows only when something is wrong.
+- **Commands:** permission levels a platform doesn't have (Discord subscribers) are no longer listed. Cooldowns read
+  **Per user** or **Everyone**.
+- **Setup windows:** the steps keep their instructions for the developer portals, without the extra notes. Kick's
+  Chatbot step no longer repeats the bot account as a separate card.
+- **README:** Twitch, and a tip to make a separate Twitch bot account a moderator.
+
 ## [1.0.2] - 2026-10-27
 
 ### Changed

@@ -76,7 +76,7 @@ describe('migration 10 (commands for Discord and Kick)', () => {
     db.prepare(
       "INSERT INTO chat_commands (id, platform, trigger, response, enabled, created_at, updated_at) VALUES ('k1', 'kick', '!vanish', 'Bye {{sender.username}', 0, '2026-10-11T17:30:00Z', '2026-10-11T17:31:00Z')",
     ).run();
-    expect(migrate(db, migrations)).toEqual({ applied: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(
       db.prepare('SELECT id, platform, trigger, description, response, enabled, created_at, updated_at FROM chat_commands').all(),
     ).toEqual([

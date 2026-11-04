@@ -54,6 +54,10 @@ export interface OAuthAdapter {
   readonly redirectHost?: 'localhost' | '127.0.0.1';
   /** Scopes for a connection role, when they differ by role (default: `scopes`). */
   scopesFor?(role: ConnectionRole): readonly string[];
+  /** How often connected accounts must be re-checked, when the platform asks for more often than the default (Twitch: hourly). */
+  readonly verifyIntervalMs?: number;
+  /** Which token revocation takes (default: the refresh token when there is one). Twitch revokes access tokens only. */
+  readonly revokeWith?: 'access_token';
   /** Missing configuration, with the steps to supply it; null when ready. */
   configurationProblem(): Promise<string | null>;
   authorizationUrl(p: { state: string; redirectUri: string; codeChallenge: string | null; scopes?: readonly string[] }): Promise<string>;

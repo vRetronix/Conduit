@@ -67,7 +67,7 @@ describe('Embed Creator page', () => {
 
   it('is in the Discord sidebar group', async () => {
     const { SECTIONS } = await import('../sections');
-    expect(SECTIONS.find((s) => s.id === 'embed-creator')).toMatchObject({ label: 'Embed Creator', group: 'discord', phase: null });
+    expect(SECTIONS.find((s) => s.id === 'embed-creator')).toMatchObject({ label: 'Embed Creator', group: 'discord' });
   });
 });
 

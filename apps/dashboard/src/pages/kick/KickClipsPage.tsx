@@ -81,10 +81,6 @@ function ClipSettings({ s, onSaved }: { s: KickClipsState; onSaved?: () => void 
           <label className="inline-check">
             <input type="checkbox" checked={draft.autoPost} onChange={(e) => set({ autoPost: e.target.checked })} /> Post new clips automatically
           </label>
-          <p className="muted small">
-            Checked every 2 minutes, so clips made in chat with Kick’s <code>/clip</code> show up within a few minutes. Only clips made after you turn
-            this on are posted, each with its thumbnail and Watch stream and View clip on Kick buttons.
-          </p>
         </div>
         <div>
           <h3 className="clip-settings-head">Saving</h3>
@@ -108,7 +104,6 @@ function ClipSettings({ s, onSaved }: { s: KickClipsState; onSaved?: () => void 
             )}
           </div>
           {errors.folder && <p className="field-error">{errors.folder}</p>}
-          <p className="muted small">Saved as .ts video files (Kick’s format), which VLC and most players open.</p>
         </div>
       </div>
       <div className="form-actions">
@@ -152,31 +147,18 @@ function ClipList({ s, onChanged }: { s: KickClipsState; onChanged?: () => void 
   return (
     <section className="card" aria-labelledby="clips-title">
       <div className="card-head">
-        <div>
-          <h2 id="clips-title">Clips{s.clips.length ? ` (${s.clips.length})` : ''}</h2>
-          <p className="muted small">
-            {s.channel ? (
-              <>
-                Clips of <strong>kick.com/{s.channel.slug}</strong>, made by anyone on Kick.
-                {s.lastCheck && !s.lastCheck.problem && <> Updated {ago(s.lastCheck.at)}.</>}
-              </>
-            ) : (
-              'Your Kick channel’s clips.'
-            )}
-          </p>
-        </div>
+        <h2 id="clips-title">Clips{s.clips.length ? ` (${s.clips.length})` : ''}</h2>
         {s.channel && (
-          <Button variant="ghost" busy={refreshing} onClick={() => void refresh()}>
+          <Button variant="ghost" busy={refreshing} title={s.lastCheck && !s.lastCheck.problem ? `Updated ${ago(s.lastCheck.at)}` : undefined} onClick={() => void refresh()}>
             Refresh
           </Button>
         )}
       </div>
       {lastProblem && <p className="small text-warn">{lastProblem}</p>}
-      {s.channel && !s.settings.channelId && s.clips.length > 0 && <p className="small muted">Choose a Discord channel in Clip settings to post clips.</p>}
       {!s.channel ? (
-        <p className="muted">Connect your main Kick account first (Dashboard → Kick).</p>
+        <p className="empty-note">Connect your main Kick account on the Dashboard.</p>
       ) : s.clips.length === 0 ? (
-        <p className="muted">No clips yet. Clips made on your channel show up here.</p>
+        <p className="empty-note">No clips yet.</p>
       ) : (
         <>
           <ul className="clip-list">
@@ -193,7 +175,6 @@ function ClipList({ s, onChanged }: { s: KickClipsState; onChanged?: () => void 
           )}
         </>
       )}
-      <p className="muted small clip-note">Kick has no official clips API yet, so this list comes from Kick’s website and may stop working if Kick changes it.</p>
     </section>
   );
 }

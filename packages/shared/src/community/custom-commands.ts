@@ -1,26 +1,29 @@
 /**
- * Custom commands for Discord and Kick: a trigger, a text response template (Discord markdown welcome on Discord), and variables filled in from the
+ * Custom commands for Discord, Kick and Twitch: a trigger, a text response template (Discord markdown welcome on Discord), and variables filled in from the
  * real event that triggered the command. Templates are text with {variable} placeholders — never code. Rendering is a
  * single pass (inserted values are never re-scanned), so a value containing "{user}" stays literal.
  *
- * Variables (the same names on both platforms):
- * - {user}    — username of the person who used the command (Kick: chat username; Discord: their username)
- * - {channel} — channel name (Kick: the channel slug, e.g. retronix; Discord: the text channel's name, e.g. general)
- * - {args}    — text after the command (Kick: words after the trigger; Discord: the command's optional "text" option);
- *               empty when nothing was given
- * - {message} — the full command as typed (Kick: the chat message; Discord: "/name text")
+ * Variables (the same names on every platform):
+ * - {user}    — username of the person who used the command (Kick/Twitch: chat name; Discord: their username)
+ * - {channel} — channel name (Kick/Twitch: your channel, e.g. retronix; Discord: the text channel's name, e.g. general)
+ * - {args}    — text after the command (Kick/Twitch: words after the trigger; Discord: the command's optional "text"
+ *               option); empty when nothing was given
+ * - {message} — the full command as typed (Kick/Twitch: the chat message; Discord: "/name text")
  *
  * Values are cleaned (control characters removed, whitespace collapsed, length capped). The finished reply is fitted to
- * the platform's limit (Kick: 500 characters / 2048 bytes; Discord: 2000 characters), ending with "…" when shortened.
+ * the platform's limit (Kick: 500 characters / 2048 bytes; Twitch: 500 characters; Discord: 2000 characters), ending
+ * with "…" when shortened.
  */
 import { z } from 'zod';
 import { fillVariables, unsupportedVariables, variableTokens, type VariableData } from './command-variables';
 import { GIVEAWAY_ENTER } from './giveaways';
 import { KICK_CHAT_MAX_BYTES, KICK_CHAT_MAX_CHARS } from '../kick/kick-setup';
+import { TWITCH_CHAT_MAX_CHARS } from '../twitch/twitch-setup';
 
-export const COMMAND_PLATFORMS = ['discord', 'kick'] as const;
+export const COMMAND_PLATFORMS = ['discord', 'kick', 'twitch'] as const;
 export type CommandPlatform = (typeof COMMAND_PLATFORMS)[number];
 export const commandPlatformSchema = z.enum(COMMAND_PLATFORMS);
+const PLATFORM_NAME: Record<CommandPlatform, string> = { discord: 'Discord', kick: 'Kick', twitch: 'Twitch' };
 
 export const COMMAND_VARIABLES = ['user', 'channel', 'args', 'message'] as const;
 export type CommandVariable = (typeof COMMAND_VARIABLES)[number];
@@ -29,6 +32,8 @@ export type CommandVariables = Partial<Record<CommandVariable, string | null>>;
 /** Per-platform limits and trigger formats. */
 export const PLATFORM_RULES = {
   kick: { prefix: '!', maxChars: KICK_CHAT_MAX_CHARS, maxBytes: KICK_CHAT_MAX_BYTES, triggerPattern: /^![a-z0-9_-]{1,31}$/ },
+  // Twitch chat: 500 characters; triggers like Kick's.
+  twitch: { prefix: '!', maxChars: TWITCH_CHAT_MAX_CHARS, maxBytes: Number.POSITIVE_INFINITY, triggerPattern: /^![a-z0-9_-]{1,31}$/ },
   // Discord slash command names: lower case, 1–32 characters (letters, digits, - and _ here).
   discord: { prefix: '/', maxChars: 2000, maxBytes: Number.POSITIVE_INFINITY, triggerPattern: /^\/[a-z0-9_-]{1,32}$/ },
 } as const;
@@ -37,6 +42,7 @@ export const PLATFORM_RULES = {
 export const RESERVED_TRIGGERS: Record<CommandPlatform, readonly string[]> = {
   discord: ['/ping', '/timeout', '/untimeout', '/ban', '/unban'],
   kick: [GIVEAWAY_ENTER.kick],
+  twitch: [],
 };
 
 /**
@@ -75,7 +81,7 @@ export function fitToPlatform(text: string, platform: CommandPlatform): string {
 /**
  * Fills in the template (see command-variables.ts) and fits it to the platform. Known variables get their (cleaned)
  * value, else their fallback, else nothing; unknown placeholders stay exactly as written. Single pass: inserted text is
- * never treated as a template. Extra spaces (e.g. where an empty variable was) are tidied. Kick replies are one line;
+ * never treated as a template. Extra spaces (e.g. where an empty variable was) are tidied. Kick and Twitch replies are one line;
  * Discord replies keep their line breaks, indentation and code exactly, so Discord markdown (lists, quotes, code blocks,
  * headings) comes out as written.
  */
@@ -101,7 +107,7 @@ export function renderTemplate(template: string, vars: CommandVariables, platfor
 
 export function normalizeTrigger(raw: string, platform: CommandPlatform): string {
   let t = raw.trim().toLowerCase();
-  // Accept "discord" for Discord as "/discord"; Kick triggers must be typed with "!".
+  // Accept "discord" for Discord as "/discord"; Kick and Twitch triggers must be typed with "!".
   if (platform === 'discord' && t && !t.startsWith('/')) t = `/${t}`;
   return t;
 }
@@ -113,11 +119,11 @@ export function triggerSchema(platform: CommandPlatform) {
     .transform((t) => normalizeTrigger(t, platform))
     .refine(
       (t) => t.startsWith(rules.prefix),
-      platform === 'kick' ? 'A trigger starts with "!", for example !discord' : 'A command name is a single word',
+      platform !== 'discord' ? 'A trigger starts with "!", for example !discord' : 'A command name is a single word',
     )
     .refine(
       (t) => rules.triggerPattern.test(t),
-      platform === 'kick'
+      platform !== 'discord'
         ? 'Use "!" followed by 1–31 letters, numbers, "-" or "_" (no spaces)'
         : 'Use 1–32 lower-case letters, numbers, "-" or "_" (no spaces)',
     )
@@ -129,8 +135,8 @@ export function triggerSchema(platform: CommandPlatform) {
 
 /**
  * Rules for a response template. New and edited responses must use only supported variables; a stored command with
- * an unknown placeholder still runs (`allowUnknownVariables`), posting that placeholder as written. Kick responses are
- * one line; Discord responses may have line breaks (for Discord markdown), stored as "\n".
+ * an unknown placeholder still runs (`allowUnknownVariables`), posting that placeholder as written. Kick and Twitch
+ * responses are one line; Discord responses may have line breaks (for Discord markdown), stored as "\n".
  */
 export function responseSchema(platform: CommandPlatform, allowUnknownVariables = false) {
   const rules = PLATFORM_RULES[platform];
@@ -143,8 +149,8 @@ export function responseSchema(platform: CommandPlatform, allowUnknownVariables 
       platform === 'discord' ? 'The response contains unsupported characters (tabs or control characters)' : 'Responses are a single line of text',
     )
     .refine(
-      (s) => platform !== 'kick' || !/^[!/]/.test(s),
-      'A Kick response can’t start with "!" or "/" (so it can’t trigger a command or a Kick chat command)',
+      (s) => platform === 'discord' || !/^[!/]/.test(s),
+      `A ${PLATFORM_NAME[platform]} response can’t start with "!" or "/" (so it can’t trigger a command or a ${PLATFORM_NAME[platform]} chat command)`,
     )
     .refine((s) => [...new Intl.Segmenter().segment(s)].length <= rules.maxChars, `Up to ${rules.maxChars} characters`)
     .refine((s) => new TextEncoder().encode(s).length <= rules.maxBytes, 'This response is too long')
@@ -153,7 +159,7 @@ export function responseSchema(platform: CommandPlatform, allowUnknownVariables 
       if (unknown.length > 0) {
         ctx.addIssue({
           code: 'custom',
-          message: `${unknown.join(', ')} ${unknown.length === 1 ? 'isn’t a variable' : 'aren’t variables'} ${platform === 'kick' ? 'for Kick commands' : 'for Discord commands'}. See Variables for the list.`,
+          message: `${unknown.join(', ')} ${unknown.length === 1 ? 'isn’t a variable' : 'aren’t variables'} for ${PLATFORM_NAME[platform]} commands. See Variables for the list.`,
         });
       }
     });
@@ -166,6 +172,8 @@ export function responseSchema(platform: CommandPlatform, allowUnknownVariables 
  * broadcaster may use everything). Decided from the platform's own data, never from names:
  * - Kick (signed chat.message.sent): broadcaster = the sender is the channel owner (same user id); moderator = Kick's
  *   "moderator" badge; subscriber = Kick's "subscriber" badge. Other badges grant nothing; no badge data = no role.
+ * - Twitch (EventSub channel.chat.message): broadcaster = the sender is the channel owner (same user id); moderator =
+ *   Twitch's "moderator" badge; subscriber = the "subscriber" or "founder" badge. Other badges grant nothing.
  * - Discord (the interaction's member permissions, computed by Discord): moderator = Manage Messages, Timeout Members,
  *   Kick Members, Ban Members or Administrator; "broadcaster" = Administrator (the server owner always has it).
  *   Discord has no subscribers, so that level isn't available there.
@@ -178,6 +186,12 @@ export const PERMISSION_HELP: Record<CommandPlatform, Record<CommandPermission, 
     everyone: { label: 'Anyone', who: 'Anyone in your chat', available: true },
     subscriber: { label: 'Subscribers', who: 'Subscribers (Kick subscriber badge), moderators and you', available: true },
     moderator: { label: 'Moderators', who: 'Your channel’s moderators (Kick moderator badge) and you', available: true },
+    broadcaster: { label: 'Broadcaster only', who: 'Only you, the channel owner', available: true },
+  },
+  twitch: {
+    everyone: { label: 'Anyone', who: 'Anyone in your chat', available: true },
+    subscriber: { label: 'Subscribers', who: 'Subscribers (Twitch subscriber or founder badge), moderators and you', available: true },
+    moderator: { label: 'Moderators', who: 'Your channel’s moderators (Twitch moderator badge) and you', available: true },
     broadcaster: { label: 'Broadcaster only', who: 'Only you, the channel owner', available: true },
   },
   discord: {

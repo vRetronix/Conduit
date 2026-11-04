@@ -187,10 +187,9 @@ describe('Kick setup dialog', () => {
     expect(text(html)).not.toMatch(/Your Kick account|Chatbot account/);
   });
 
-  it('explains the main account before connecting it', async () => {
+  it('the account step is the connect button, with no explanation', async () => {
     const t = text(await dialog(state()));
-    expect(t).toContain('main Kick account');
-    expect(t).toContain('user:read, channel:read');
+    expect(t).not.toContain('user:read, channel:read');
     expect(t).toContain('Connect Kick account');
   });
 
@@ -200,7 +199,7 @@ describe('Kick setup dialog', () => {
     expect(t).toContain('Use my main account');
     expect(t).toContain('Use a separate bot account');
     expect(t).toContain('Add Bot Account');
-    expect(t).toContain('Log in as the bot account first');
+    expect(t).toContain('Log in to kick.com as the bot account first, or use a private window.');
     expect(t).toContain('not available in CONDUIT yet');
   });
 
@@ -211,22 +210,20 @@ describe('Kick setup dialog', () => {
     expect(text(await dialog(state({ primary: streamer, bot: botAcct, mode: 'separate' }), 'account'))).toContain('Disconnect main account');
   });
 
-  it('the Chatbot step (Dashboard → Kick → Manage) shows the Kick Bot Account details, separate from the main account', async () => {
+  it('the Chatbot step shows the bot account, without secrets', async () => {
     const t = text(await dialog(state({ primary: streamer, bot: botAcct, mode: 'separate' }), 'chatbot'));
-    expect(t).toMatch(/Kick Bot Account Connected Platform Kick Bot account/);
-    expect(t).toMatch(/Moderation Not done by this account/);
+    expect(t).not.toContain('Kick Bot Account');
     expect(t).not.toMatch(/token|secret/i);
   });
 
-  it('uses the same wizard as Discord setup: numbered steps, step header, Back/Continue, and opens at the first unfinished step', async () => {
+  it('uses the same wizard as Discord setup: numbered steps, Back/Continue, and opens at the first unfinished step', async () => {
     const steps = (html: string) => [...html.matchAll(/<span class="step-number">([^<]*)<\/span> ([^<]+)<\/button>/g)].map((m) => `${m[1]} ${m[2]}`);
     const fresh = await dialog(state({ configured: false }));
     expect(steps(fresh)).toEqual(['1 Kick App', '2 Your Account', '3 Chatbot', '4 Live Chat']);
-    expect(text(fresh)).toContain('Step 1 of 4 · Kick App');
+    expect(text(fresh)).not.toContain('Step 1 of 4');
     expect(fresh.match(/<button type="button" disabled=""/g)?.length).toBe(3); // later steps wait for the app
     const connected = await dialog(state({ primary: streamer }));
     expect(steps(connected)).toEqual(['✓ Kick App', '✓ Your Account', '✓ Chatbot', '4 Live Chat']);
-    expect(text(connected)).toContain('Step 4 of 4 · Live Chat');
     expect(text(connected)).toMatch(/Not finished yet Main Account .*RetroLive.* Chatbot .* Live Chat Disconnected/);
     expect(connected).toContain('class="wizard-steps"');
     expect(text(connected)).toContain('Back');
@@ -268,11 +265,11 @@ describe('Kick live chat', () => {
     expect(await tag(state({ primary: { ...streamer, status: 'needs_reauth' } }))).toEqual(['pill-bad', 'Needs Reconnect']);
   });
 
-  it('never claims Connected before the subscription exists; explains an unconfirmed tunnel', async () => {
+  it('never claims Connected before the subscription exists; an unconfirmed tunnel waits for the first message', async () => {
     let t = await dialog(state({ primary: streamer, chat: chatState({ receive: { status: 'connecting' } }) }));
     expect(t).toMatch(/Receiving retrolive's chat: Connecting…/);
     t = await dialog(state({ primary: streamer, chat: chatState({ receive: { status: 'connected', delivery: 'unconfirmed' } }) }));
-    expect(t).toContain('waiting for the first message to confirm your tunnel');
+    expect(t).toContain('waiting for the first message');
     expect(t).toContain('cloudflared tunnel --url http://127.0.0.1:47822');
     expect(t).toContain('/kick/webhook');
   });
@@ -339,9 +336,7 @@ describe('Kick live chat', () => {
         chat: chatState({ send: { account: 'bot', accountName: 'RetroBotKick', channel: 'retrolive', ready: true } }),
       }),
     );
-    expect(t).toMatch(/Sends as RetroBotKick \(bot account\) to retrolive\s*'s live chat/);
-    expect(t).toContain('Nothing is ever posted automatically');
-    expect(t).toContain('Send to live chat');
+    expect(t).toContain('Send as RetroBotKick');
 
     t = await dialog(
       state({
@@ -361,8 +356,8 @@ describe('Kick live chat', () => {
       }),
     );
     expect(t).toContain('Reauthorize bot account');
-    expect(t).toContain('log in as RetroBotKick first');
-    expect(t).not.toContain('Send to live chat');
+    expect(t).toContain('Log in to kick.com as RetroBotKick first');
+    expect(t).not.toContain('Send as');
   });
 });
 

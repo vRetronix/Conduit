@@ -7,6 +7,10 @@ export const SETTING_KEYS = {
   kickClientId: 'kick.client_id',
   /** Which Kick account CONDUIT's chatbot uses: 'primary' (the streamer's account) or 'separate' (a bot account). */
   kickChatbotAccount: 'kick.chatbot_account',
+  /** The user's own Twitch developer app Client ID (not secret; the Client Secret is in the encrypted vault). */
+  twitchClientId: 'twitch.client_id',
+  /** Which Twitch account CONDUIT's chatbot uses: 'primary' (the streamer's account) or 'separate' (a bot account). */
+  twitchChatbotAccount: 'twitch.chatbot_account',
   /** The Discord channel last used for a giveaway announcement (JSON {guildId, channelId}), preselected for new ones. */
   giveawayDiscordChannel: 'giveaways.discord_channel',
   /** Edited Kick giveaway chat messages (JSON {kind: template}; a missing kind uses its default). */

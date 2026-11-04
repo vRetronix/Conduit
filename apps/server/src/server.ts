@@ -83,6 +83,7 @@ export async function startServer(ctx: AppContext): Promise<RunningServer> {
       // The bot's gateway session closes cleanly before exit (exiting mid-close trips a libuv assertion).
       await ctx.services.discord.stopBot().catch(() => undefined);
       await ctx.services.kickChat.close().catch(() => undefined);
+      await ctx.services.twitchChat.close().catch(() => undefined);
       await ctx.services.connections.close();
       await realtime.close();
       const closed = new Promise<void>((resolve) => server.close(() => resolve()));

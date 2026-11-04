@@ -739,7 +739,7 @@ describe('migrations 13 and 14 keep existing giveaways working', () => {
     old.exec(`INSERT INTO giveaway_entries (giveaway_id, platform, platform_user_id, display_name, entered_at)
               VALUES ('g1', 'discord', '900000000000000001', 'fan', 't')`);
     old.exec(`INSERT INTO giveaway_draws (id, giveaway_id, kind, drawn_at, pool_size) VALUES ('d1', 'g1', 'initial', 't', 1)`);
-    expect(migrate(old, migrations)).toEqual({ applied: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(old, migrations)).toEqual({ applied: [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(giveawaysRepo.get(old, 'g1')).toMatchObject({ prize: 'Steam key', subscriberMultiplier: 1, kickRewardCost: null, discordMessageId: null });
     expect(giveawaysRepo.entries(old, 'g1')).toEqual([expect.objectContaining({ source: null, subscriberVerified: false, subscriberEvidence: null })]);
     expect(giveawaysRepo.draws(old, 'g1')[0]!.ticketSnapshot).toBeNull();

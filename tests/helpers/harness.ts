@@ -104,6 +104,8 @@ export interface HarnessOptions {
   random?: () => number;
   /** Kick's website (unofficial data, e.g. !followage and clips). Defaults to failing every request, like the network above. */
   kickWebFetch?: FetchLike;
+  /** Twitch EventSub WebSocket (FakeTwitch.startEventSub). Defaults to a closed local port: never the real Twitch. */
+  twitchEventSubUrl?: string;
 }
 
 const noNetwork: FetchLike = async () => {
@@ -153,6 +155,7 @@ export async function createHarness(env: Record<string, string> = {}, opts: Harn
       kickWebFetch: opts.kickWebFetch ?? noNetwork,
       // Saved Kick clips go to the test's own folder, never the real Videos folder.
       clipsFolder: path.join(dir, 'clips'),
+      twitchEventSubUrl: opts.twitchEventSubUrl ?? 'ws://127.0.0.1:9/ws',
     });
     const server = await startServer({ config, db, logger, version: '9.9.9-test', startedAt: new Date(), services, localKey: LOCAL_KEY });
     return { services, server, baseUrl: `http://127.0.0.1:${server.port}` };

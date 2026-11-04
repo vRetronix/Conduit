@@ -67,13 +67,13 @@ describe('Commands hub', () => {
     expect(SECTIONS.map((s) => s.id)).not.toContain('kick-commands');
   });
 
-  it('offers Discord and Kick tabs only', async () => {
+  it('offers Discord, Kick and Twitch tabs only', async () => {
     const { CommandsPage } = await import('../pages/community/CommandsPage');
     const html = renderToStaticMarkup(<CommandsPage />);
     const tabs = [...html.matchAll(/role="tab"[^>]*>(.*?)<\/button>/g)].map((m) => m[1]!.replace(/<[^>]+>/g, '').trim());
-    expect(tabs).toEqual(['Discord', 'Kick']);
+    expect(tabs).toEqual(['Discord', 'Kick', 'Twitch']);
     expect(html).toContain('aria-selected="true"');
-    expect(html).not.toMatch(/YouTube|Twitch/);
+    expect(html).not.toMatch(/YouTube/);
   });
 
   it('Discord: custom commands are listed apart from the default commands', async () => {
@@ -98,7 +98,7 @@ describe('Commands hub', () => {
 
   it('Kick: default commands as on / off | Command | Access | Description, without a Status column', async () => {
     const t = text(await render(hub({ defaults: [{ trigger: '!enter', description: 'Enter the current giveaway', permission: 'everyone' as const, enabled: true, canDisable: false, inactiveReason: null, args: [], example: '!enter', message: null }] })));
-    expect(t).toMatch(/Default Commands 1 Custom Commands 0 On \/ off Command Access Message !enter Anyone No reply in chat Example: !enter/);
+    expect(t).toMatch(/Default Commands 1 Custom Commands 0 On \/ off Command Access Message !enter Anyone No reply/);
     expect(t).not.toMatch(/Status/);
   });
 
@@ -123,17 +123,18 @@ describe('Commands hub', () => {
     ];
     const html = await render(hub({ defaults }));
     const t = text(html);
-    // The Message column: the reply with its {variables} marked, then an example; the description is the tooltip.
-    expect(t).toMatch(/!timeout Moderators? \{name\} is timed out for \{minutes\} minutes\. Example: !timeout @troll 10 spamming/);
+    // The Message column: the reply with its {variables} marked; the description and an example are the tooltip.
+    expect(t).toMatch(/!timeout Moderators? \{name\} is timed out for \{minutes\} minutes\./);
+    expect(t).not.toContain('Example:');
     expect(html).toContain('<span class="command-message"><code class="command-var">{name}</code> is timed out for <code class="command-var">{minutes}</code> minutes.</span>');
-    expect(html).toContain('<code title="!timeout description">!timeout</code>');
-    expect(t).toContain('No reply in chat Your custom !followage answers instead');
+    expect(html).toContain('<code title="!timeout description\n!timeout @troll 10 spamming">!timeout</code>');
+    expect(t).toContain('No reply Your custom !followage answers instead');
     // Switches: on, off, and fixed on for !enter.
     expect(html).toMatch(/aria-label="!timeout on" checked=""/);
     expect(html).toMatch(/aria-label="!title off"(?![^>]*checked)/);
     expect(html).toMatch(/aria-label="!enter on" disabled="" checked=""/);
     expect(t).not.toContain('Edit access');
-    expect(t).toContain('A custom command with the same trigger answers instead of the default.');
+    expect(t).not.toContain('A custom command with the same trigger answers instead of the default.');
   });
 
   it('each custom command starts with an on/off toggle (green on, red off); the row ends with Edit and Delete only', async () => {
@@ -165,7 +166,7 @@ describe('Commands hub', () => {
         hub({ custom: [custom({ trigger: '!vanish', response: 'Bye {{sender.username}', unknownVariables: ['{sender.username}'] })] }),
       ),
     );
-    expect(t).toMatch(/\{sender\.username\} isn’t a variable for Kick commands; it’s posted as written/);
+    expect(t).toMatch(/Not a variable: \{sender\.username\}/);
     expect(t).toContain('Enabled');
   });
 
@@ -179,7 +180,7 @@ describe('Commands hub', () => {
 });
 
 describe('Command editor variables', () => {
-  async function editor(platform: 'kick' | 'discord', response = '') {
+  async function editor(platform: 'kick' | 'twitch' | 'discord', response = '') {
     const { CommandEditor } = await import('../pages/community/CommandsPage');
     const initial =
       response === ''
@@ -209,23 +210,30 @@ describe('Command editor variables', () => {
   const inserts = (html: string) => [...html.matchAll(/aria-label="Insert ([^"]+)"/g)].map((m) => m[1]);
   const groups = (html: string) => [...html.matchAll(/<summary>([^<]+)<\/summary>/g)].map((m) => m[1]);
 
-  it('lists the variables by group, clickable, with examples; only the ones that work on Kick', async () => {
+  it('Twitch commands get the chat variables, but not Discord’s or Kick’s website data', async () => {
+    const html = await editor('twitch');
+    expect(groups(html)).toEqual(['User and input', 'Your stream', 'Random and maths', 'Counters', 'Time', 'Kick and Twitch chat']);
+    const list = inserts(html);
+    for (const v of ['{user}', '{uptime}', '{roles}', '{submonths}', '{counter:deaths+1}']) expect(list).toContain(v);
+    for (const v of ['{mention}', '{points}', '{followage}']) expect(list).not.toContain(v);
+  });
+
+  it('lists the variables by group, clickable; only the ones that work on Kick', async () => {
     const html = await editor('kick');
     expect(groups(html)).toEqual([
       'User and input',
-      'Your Kick stream',
+      'Your stream',
       'Random and maths',
       'Counters',
       'Time',
-      'Kick only',
+      'Kick and Twitch chat',
     ]);
     const list = inserts(html);
     for (const v of ['{user}', '{touser}', '{args}', '{1}', '{random:1-6}', '{pick:heads;tails}', '{counter:deaths+1}', '{uptime}', '{submonths}']) expect(list).toContain(v);
     for (const v of ['{mention}', '{points}', '{server}']) expect(list).not.toContain(v); // Discord only
     const t = text(html);
-    expect(t).toContain('Add |text for a fallback');
-    expect(t).toContain('If nothing is given, {args} is empty');
-    expect(t).toContain('Hello {user}, welcome to {channel}!');
+    expect(t).toContain('{touser|everyone} fallback');
+    expect(t).not.toMatch(/Examples|If nothing is given|Click one to insert/);
     expect(html).toMatch(/<details class="variable-group" open=""><summary>User and input<\/summary>/);
   });
 
@@ -233,7 +241,6 @@ describe('Command editor variables', () => {
     const html = await editor('discord');
     const t = text(html);
     expect(t).toContain('Description');
-    expect(t).toContain('adds a “text” box to the command');
     expect(groups(html)).toContain('Discord only');
     expect(groups(html)).not.toContain('Kick only');
     for (const v of ['{mention}', '{server}', '{membercount}', '{points}', '{level}', '{rank}']) expect(inserts(html)).toContain(v);
@@ -245,11 +252,9 @@ describe('Command editor variables', () => {
     expect(t).toContain('hi rolled 3, deaths 8, live 2 hours 15 minutes');
   });
 
-  it('previews with clearly labelled example values', async () => {
+  it('previews with example values', async () => {
     const t = text(await editor('kick', 'Hello {user}, welcome to {channel}!'));
-    expect(t).toMatch(
-      /Preview with example values \( user “ExampleViewer”, channel “yourchannel”, text “hi there”\): Hello ExampleViewer, welcome to yourchannel!/,
-    );
+    expect(t).toMatch(/Preview Hello ExampleViewer, welcome to yourchannel!/);
   });
 
   it('Discord: a several-line reply box, and a preview with Discord markdown', async () => {
@@ -257,7 +262,6 @@ describe('Command editor variables', () => {
     expect(html).toMatch(/<textarea[^>]*id="command-response"/);
     expect(html).toContain('<div class="md-h2" role="heading" aria-level="4">Hi exampleviewer</div>');
     expect(html).toContain('<ul class="md-list"><li><strong>bold</strong> item</li></ul>');
-    expect(text(html)).toContain('Discord markdown works');
     expect(await editor('kick')).toMatch(/<input[^>]*id="command-response"/);
   });
 
@@ -300,31 +304,24 @@ describe('Command editor permissions and cooldowns', () => {
     return renderToStaticMarkup(<CommandEditor platform={platform} initial={initial as never} onCancel={() => {}} onSaved={() => {}} />);
   }
 
-  it('Kick: all four permission levels, explained', async () => {
-    const t = text(await editor('kick'));
-    expect(t).toContain('Permissions');
-    expect(t).toMatch(/Anyone — Anyone in your chat/);
-    expect(t).toMatch(/Subscribers — Subscribers \(Kick subscriber badge\), moderators and you/);
-    expect(t).toMatch(/Moderators — Your channel’s moderators \(Kick moderator badge\) and you/);
-    expect(t).toMatch(/Broadcaster only — Only you, the channel owner/);
+  it('Kick: all four permission levels; who each one is shows on hover', async () => {
+    const html = await editor('kick');
+    expect(text(html)).toMatch(/Permissions Anyone Subscribers Moderators Broadcaster only/);
+    expect(html).toContain('title="Subscribers (Kick subscriber badge), moderators and you"');
   });
 
-  it('Discord: subscribers shown as unavailable (disabled), administrators explained', async () => {
+  it('Discord: no Subscribers level (Discord has none); Admin explained on hover', async () => {
     const html = await editor('discord');
-    const subscriberRadio = html.match(/<input[^>]*value="subscriber"[^>]*>/)![0];
-    expect(subscriberRadio).toContain('disabled=""');
-    expect(text(html)).toContain('Not available: Discord has no subscribers');
-    expect(text(html)).toContain('Admin — Members with Administrator (the server owner always has it)');
+    expect(html).not.toMatch(/value="subscriber"/);
+    expect(html).toContain('title="Members with Administrator (the server owner always has it)"');
   });
 
   it('cooldown: no duration field until a cooldown is chosen; then a seconds field with limits', async () => {
     let html = await editor('kick');
     expect(html).not.toContain('id="command-cooldown-seconds"');
-    expect(text(html)).toContain('The command can be used again right away.');
     html = await editor('kick', { cooldownMode: 'user', cooldownSeconds: 45 });
     expect(html).toMatch(/id="command-cooldown-seconds"[^>]*min="1"[^>]*max="86400"/);
     expect(html).toContain('value="45"');
-    expect(text(html)).toContain('cooldowns reset when CONDUIT restarts');
   });
 
   it('checkCommandForm validates the cooldown like the backend', async () => {

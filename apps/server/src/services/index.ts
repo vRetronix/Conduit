@@ -45,6 +45,14 @@ import { DiscordPoster } from '../discord/discord-poster';
 import { EmbedLibraryService } from '../discord/embed-library-service';
 import { StickyService } from '../discord/sticky-service';
 import { StreamNotificationService } from '../kick/stream-notification-service';
+import { twitchLiveSource } from '../kick/live-sources';
+import type { TwitchAdapter } from '../twitch/twitch';
+import { TwitchApi } from '../twitch/twitch-api';
+import { TwitchCredentials } from '../twitch/twitch-credentials';
+import { TwitchSetupService } from '../twitch/twitch-setup-service';
+import { TwitchChatApi } from '../twitch/twitch-chat-api';
+import { TwitchChatService } from '../twitch/twitch-chat-service';
+import { TwitchCommandService } from '../twitch/twitch-command-service';
 import { KickClipService } from '../kick/kick-clip-service';
 import { KickClipsApi } from '../kick/kick-clips-api';
 import { TimedMessageService } from '../community/timed-message-service';
@@ -58,6 +66,10 @@ export interface Services {
   connections: ConnectionService;
   discord: DiscordSetupService;
   kick: KickSetupService;
+  /** Twitch setup: the user's own Twitch app, the streamer's account and the optional chatbot account. */
+  twitch: TwitchSetupService;
+  twitchChat: TwitchChatService;
+  twitchCommands: TwitchCommandService;
   kickChat: KickChatService;
   kickCommands: KickCommandService;
   kickDefaults: KickDefaultCommandService;
@@ -109,6 +121,8 @@ export function createServices(opts: {
   fetch?: FetchLike;
   /** Requests to Kick's website for its unofficial data, such as !followage and clips (default: the platform fetch above). */
   kickWebFetch?: FetchLike;
+  /** Twitch's EventSub WebSocket URL for chat (tests use a local simulated Twitch). */
+  twitchEventSubUrl?: string;
   /** Where Kick clips are saved unless the user chooses a folder (default: Videos\CONDUIT Clips). */
   clipsFolder?: string;
   /** Creates the Discord bot's gateway client (tests substitute a fake). Defaults to discord.js. */
@@ -143,7 +157,8 @@ export function createServices(opts: {
   const vault = opts.vault ?? new UnavailableVault();
   const discordCredentials = new DiscordCredentials(opts.db, vault);
   const kickCredentials = new KickCredentials(opts.db, vault, now);
-  const adapters = { ...createAdapters({ discordCredentials, kickCredentials }, { version, fetch: opts.fetch, now }), ...opts.adapters };
+  const twitchCredentials = new TwitchCredentials(opts.db, vault, now);
+  const adapters = { ...createAdapters({ discordCredentials, kickCredentials, twitchCredentials }, { version, fetch: opts.fetch, now }), ...opts.adapters };
   const connections = new ConnectionService({
     db: opts.db,
     now,
@@ -297,6 +312,24 @@ export function createServices(opts: {
     api: kickApi,
     webhookPort: opts.config.kickWebhookPort ?? 47822,
   });
+  const twitchApi = new TwitchApi({
+    fetch: opts.fetch,
+    now,
+    onRateLimited: (s) => alerts.push({ key: 'twitch-rate-limit', level: 'warn', title: 'Twitch is rate limiting', detail: `Requests are paused${s ? ` for about ${s} s` : ' briefly'}; CONDUIT tries again on its own.` }),
+  });
+  const twitchChat = new TwitchChatService({
+    db: opts.db,
+    now,
+    logger: opts.logger.child({ module: 'twitch-chat' }),
+    connections,
+    credentials: twitchCredentials,
+    api: new TwitchChatApi({
+      fetch: opts.fetch,
+      now,
+      onRateLimited: (s) => alerts.push({ key: 'twitch-rate-limit', level: 'warn', title: 'Twitch is rate limiting', detail: `Requests are paused${s ? ` for about ${s} s` : ' briefly'}; CONDUIT tries again on its own.` }),
+    }),
+    eventSubUrl: opts.twitchEventSubUrl,
+  });
   const kick = new KickSetupService({
     db: opts.db,
     now,
@@ -341,13 +374,30 @@ export function createServices(opts: {
     kick: kickChat,
     loyaltyLog: async () => loyalty?.logEntries() ?? [],
   });
-  timedMessages = new TimedMessageService({ db: opts.db, now, logger: opts.logger.child({ module: 'timed-messages' }), kick: kickChat, poster, discordChannels, discordConnected, sleep: opts.sleep });
+  timedMessages = new TimedMessageService({
+    db: opts.db,
+    now,
+    logger: opts.logger.child({ module: 'timed-messages' }),
+    kick: kickChat,
+    twitch: twitchChat,
+    poster,
+    discordChannels,
+    discordConnected,
+    sleep: opts.sleep,
+  });
   // Discord only: earning comes from the bot's message events (onGuildEvent above); Kick takes no part.
   // Command variables: counters, your Kick stream (official API), Loyalty, servers.
   let kickAppTokenCache: { token: string; expiresAt: number } | null = null;
   const kickChannelInfo = async (slug: string) => {
     if (!kickAppTokenCache || kickAppTokenCache.expiresAt - 60_000 < now().getTime()) kickAppTokenCache = await (adapters.kick as KickAdapter).appAccessToken();
     const [c] = await kickApi.channelsBySlugs(kickAppTokenCache.token, [slug]);
+    return c ? { live: c.live, title: c.title, category: c.category, viewers: c.viewerCount, startedAt: c.startTime } : null;
+  };
+  // Your Twitch stream for Twitch commands' variables (the app access token, kept in memory).
+  let twitchAppTokenCache: { token: string; expiresAt: number; clientId: string } | null = null;
+  const twitchChannelInfo = async (login: string) => {
+    if (!twitchAppTokenCache || twitchAppTokenCache.expiresAt - 60_000 < now().getTime()) twitchAppTokenCache = await (adapters.twitch as TwitchAdapter).appAccessToken();
+    const [c] = await twitchApi.channelsByLogins(twitchAppTokenCache, [login]);
     return c ? { live: c.live, title: c.title, category: c.category, viewers: c.viewerCount, startedAt: c.startTime } : null;
   };
   const kickWeb = new KickWebData({ now, fetch: opts.kickWebFetch ?? opts.fetch });
@@ -397,6 +447,8 @@ export function createServices(opts: {
     random: opts.random,
     mainKickChannel: () => kickChat.mainChannel(),
     kickChannelInfo,
+    mainTwitchChannel: () => twitchChat.mainChannel(),
+    twitchChannelInfo,
     loyalty: (guildId, userId) => loyalty?.commandStats(guildId, userId) ?? null,
     discordGuild: (guildId) => {
       const g = bot.liveGuilds()?.find((x) => x.id === guildId);
@@ -405,7 +457,12 @@ export function createServices(opts: {
     commandList: (platform) =>
       platform === 'kick'
         ? kickEveryoneCommands()
-        : commandAccess.apply([...builtIns, ...(loyalty?.slashCommands() ?? [])]).map((c) => `/${c.name}`).concat(customCommands.runnable('discord').map((c) => c.trigger)),
+        : platform === 'twitch'
+          ? customCommands
+              .runnable('twitch')
+              .filter((c) => c.permission === 'everyone')
+              .map((c) => c.trigger)
+          : commandAccess.apply([...builtIns, ...(loyalty?.slashCommands() ?? [])]).map((c) => `/${c.name}`).concat(customCommands.runnable('discord').map((c) => c.trigger)),
   });
   loyalty = new LoyaltyService({
     db: opts.db,
@@ -438,7 +495,23 @@ export function createServices(opts: {
     const healthy = r.status === 'connected' ? true : r.status === 'connecting' || r.status === 'disconnected' ? null : false;
     return { healthy, problem: { level: 'warn', title: 'Kick chat disconnected', detail: r.problem ?? null }, recovered: 'Kick chat connected again' };
   });
+  alerts.watch('twitch-chat', () => {
+    const r = twitchChat.state().receive;
+    const healthy = r.status === 'connected' ? true : r.status === 'connecting' || r.status === 'disconnected' ? null : false;
+    return { healthy, problem: { level: 'warn', title: 'Twitch chat disconnected', detail: r.problem ?? null }, recovered: 'Twitch chat connected again' };
+  });
   stickies = new StickyService({ db: opts.db, now, logger: opts.logger.child({ module: 'stickies' }), poster, discordChannels, discordConnected, botUserId });
+  const twitch = new TwitchSetupService({
+    db: opts.db,
+    now,
+    logger: opts.logger.child({ module: 'twitch-setup' }),
+    vault,
+    credentials: twitchCredentials,
+    // The registry's Twitch adapter (tests may substitute adapters; Twitch setup always needs the real contract).
+    adapter: adapters.twitch as TwitchAdapter,
+    connections,
+    chat: twitchChat,
+  });
   const notifications = new StreamNotificationService({
     db: opts.db,
     now,
@@ -446,6 +519,12 @@ export function createServices(opts: {
     kickApi,
     kickAppToken: () => (adapters.kick as KickAdapter).appAccessToken(),
     kickConfigured: async () => (await kickCredentials.client()) !== null,
+    twitch: twitchLiveSource({
+      api: twitchApi,
+      appToken: () => (adapters.twitch as TwitchAdapter).appAccessToken(),
+      configured: async () => (await twitchCredentials.client()) !== null,
+      now,
+    }),
     poster,
     discordChannels,
   });
@@ -519,6 +598,9 @@ export function createServices(opts: {
     connections,
     discord,
     kick,
+    twitch,
+    twitchChat,
+    twitchCommands: new TwitchCommandService({ logger: opts.logger.child({ module: 'twitch-commands' }), chat: twitchChat, commands: customCommands, variables, sleep: opts.sleep }),
     kickChat,
     kickCommands: new KickCommandService({ logger: opts.logger.child({ module: 'kick-commands' }), chat: kickChat, commands: customCommands, variables, defaults: kickDefaults, sleep: opts.sleep }),
     kickDefaults,

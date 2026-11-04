@@ -1,5 +1,5 @@
 /**
- * Custom command variables (Kick and Discord): the catalogue shown in the editor, and the renderer that fills them in.
+ * Custom command variables (Kick, Twitch and Discord): the catalogue shown in the editor, and the renderer that fills them in.
  *
  * Syntax: `{name}`, `{name:argument}` and `{name|fallback}` (or both: `{name:argument|fallback}`). The fallback is used
  * when the value is empty or unavailable, e.g. `{touser|everyone}` or `{title|no title}`.
@@ -12,7 +12,7 @@
  * no dependencies, so the dashboard can use the catalogue and preview without loading anything else.
  */
 
-export type VariablePlatform = 'kick' | 'discord';
+export type VariablePlatform = 'kick' | 'discord' | 'twitch';
 
 export const VARIABLE_GROUPS = [
   'input',
@@ -27,11 +27,11 @@ export type VariableGroup = (typeof VARIABLE_GROUPS)[number];
 
 export const VARIABLE_GROUP_LABEL: Record<VariableGroup, string> = {
   input: 'User and input',
-  stream: 'Your Kick stream',
+  stream: 'Your stream',
   random: 'Random and maths',
   counters: 'Counters',
   time: 'Time',
-  kick: 'Kick only',
+  kick: 'Kick and Twitch chat',
   discord: 'Discord only',
 };
 
@@ -45,44 +45,44 @@ export interface VariableInfo {
   insert: string;
 }
 
-const BOTH = ['kick', 'discord'] as const;
-const KICK = ['kick'] as const;
+const ALL = ['kick', 'discord', 'twitch'] as const;
+const CHAT = ['kick', 'twitch'] as const;
 const DISCORD = ['discord'] as const;
 
 export const VARIABLES: readonly VariableInfo[] = [
   // User and input
-  { name: 'user', group: 'input', platforms: BOTH, description: 'Who used the command', insert: '{user}' },
-  { name: 'touser', group: 'input', platforms: BOTH, description: 'The first word after the command without @, else who used it', insert: '{touser}' },
-  { name: 'userid', group: 'input', platforms: BOTH, description: 'The user’s Kick or Discord user id', insert: '{userid}' },
-  { name: 'args', group: 'input', platforms: BOTH, description: 'Everything after the command (Discord: the "text" box)', insert: '{args}' },
-  { name: '1', group: 'input', platforms: BOTH, description: 'One word after the command: {1} to {9}', insert: '{1}' },
-  { name: 'message', group: 'input', platforms: BOTH, description: 'The whole command as typed', insert: '{message}' },
-  { name: 'channel', group: 'input', platforms: BOTH, description: 'Kick: your channel. Discord: the text channel', insert: '{channel}' },
-  { name: 'platform', group: 'input', platforms: BOTH, description: 'Kick or Discord', insert: '{platform}' },
-  { name: 'commands', group: 'input', platforms: BOTH, description: 'The commands people can use here', insert: '{commands}' },
-  // Your Kick stream
-  { name: 'streamer', group: 'stream', platforms: BOTH, description: 'Your Kick channel name', insert: '{streamer}' },
-  { name: 'title', group: 'stream', platforms: BOTH, description: 'Your stream title', insert: '{title}' },
-  { name: 'category', group: 'stream', platforms: BOTH, description: 'Your stream category or game', insert: '{category}' },
-  { name: 'viewers', group: 'stream', platforms: BOTH, description: 'Viewers right now (when live)', insert: '{viewers}' },
-  { name: 'uptime', group: 'stream', platforms: BOTH, description: 'How long you’ve been live (or "offline")', insert: '{uptime}' },
-  { name: 'url', group: 'stream', platforms: BOTH, description: 'Link to your Kick channel', insert: '{url}' },
+  { name: 'user', group: 'input', platforms: ALL, description: 'Who used the command', insert: '{user}' },
+  { name: 'touser', group: 'input', platforms: ALL, description: 'The first word after the command without @, else who used it', insert: '{touser}' },
+  { name: 'userid', group: 'input', platforms: ALL, description: 'The user’s Kick, Twitch or Discord user id', insert: '{userid}' },
+  { name: 'args', group: 'input', platforms: ALL, description: 'Everything after the command (Discord: the "text" box)', insert: '{args}' },
+  { name: '1', group: 'input', platforms: ALL, description: 'One word after the command: {1} to {9}', insert: '{1}' },
+  { name: 'message', group: 'input', platforms: ALL, description: 'The whole command as typed', insert: '{message}' },
+  { name: 'channel', group: 'input', platforms: ALL, description: 'Kick/Twitch: your channel. Discord: the text channel', insert: '{channel}' },
+  { name: 'platform', group: 'input', platforms: ALL, description: 'Kick, Twitch or Discord', insert: '{platform}' },
+  { name: 'commands', group: 'input', platforms: ALL, description: 'The commands people can use here', insert: '{commands}' },
+  // Your stream: Twitch commands use your Twitch stream, Kick and Discord commands your Kick stream
+  { name: 'streamer', group: 'stream', platforms: ALL, description: 'Your channel name (Twitch commands: Twitch, others: Kick)', insert: '{streamer}' },
+  { name: 'title', group: 'stream', platforms: ALL, description: 'Your stream title', insert: '{title}' },
+  { name: 'category', group: 'stream', platforms: ALL, description: 'Your stream category or game', insert: '{category}' },
+  { name: 'viewers', group: 'stream', platforms: ALL, description: 'Viewers right now (when live)', insert: '{viewers}' },
+  { name: 'uptime', group: 'stream', platforms: ALL, description: 'How long you’ve been live (or "offline")', insert: '{uptime}' },
+  { name: 'url', group: 'stream', platforms: ALL, description: 'Link to your channel (Twitch commands: Twitch, others: Kick)', insert: '{url}' },
   // Random and maths
-  { name: 'random', group: 'random', platforms: BOTH, description: 'A random number: 1–100, or the range you give', insert: '{random:1-6}' },
-  { name: 'pick', group: 'random', platforms: BOTH, description: 'One item at random, items separated by ;', insert: '{pick:heads;tails}' },
-  { name: 'randomuser', group: 'random', platforms: BOTH, description: 'Someone who chatted recently here', insert: '{randomuser}' },
-  { name: 'math', group: 'random', platforms: BOTH, description: 'Arithmetic: + - * / % ^ and ( )', insert: '{math:2*(3+4)}' },
+  { name: 'random', group: 'random', platforms: ALL, description: 'A random number: 1–100, or the range you give', insert: '{random:1-6}' },
+  { name: 'pick', group: 'random', platforms: ALL, description: 'One item at random, items separated by ;', insert: '{pick:heads;tails}' },
+  { name: 'randomuser', group: 'random', platforms: ALL, description: 'Someone who chatted recently here', insert: '{randomuser}' },
+  { name: 'math', group: 'random', platforms: ALL, description: 'Arithmetic: + - * / % ^ and ( )', insert: '{math:2*(3+4)}' },
   // Counters
-  { name: 'count', group: 'counters', platforms: BOTH, description: 'How many times this command has been used', insert: '{count}' },
-  { name: 'counter', group: 'counters', platforms: BOTH, description: 'A named counter; +1, -1 or =0 changes it', insert: '{counter:deaths+1}' },
+  { name: 'count', group: 'counters', platforms: ALL, description: 'How many times this command has been used', insert: '{count}' },
+  { name: 'counter', group: 'counters', platforms: ALL, description: 'A named counter; +1, -1 or =0 changes it', insert: '{counter:deaths+1}' },
   // Time
-  { name: 'time', group: 'time', platforms: BOTH, description: 'The time now (optionally in a time zone)', insert: '{time:America/New_York}' },
-  { name: 'date', group: 'time', platforms: BOTH, description: 'Today’s date (optionally in a time zone)', insert: '{date}' },
-  { name: 'countdown', group: 'time', platforms: BOTH, description: 'Time left until a date', insert: '{countdown:2026-12-25}' },
-  { name: 'countup', group: 'time', platforms: BOTH, description: 'Time since a date', insert: '{countup:2025-01-01}' },
-  // Kick only
-  { name: 'roles', group: 'kick', platforms: KICK, description: 'The user’s Kick badges (moderator, VIP, subscriber…)', insert: '{roles}' },
-  { name: 'submonths', group: 'kick', platforms: KICK, description: 'The user’s subscriber months (from their badge)', insert: '{submonths}' },
+  { name: 'time', group: 'time', platforms: ALL, description: 'The time now (optionally in a time zone)', insert: '{time:America/New_York}' },
+  { name: 'date', group: 'time', platforms: ALL, description: 'Today’s date (optionally in a time zone)', insert: '{date}' },
+  { name: 'countdown', group: 'time', platforms: ALL, description: 'Time left until a date', insert: '{countdown:2026-12-25}' },
+  { name: 'countup', group: 'time', platforms: ALL, description: 'Time since a date', insert: '{countup:2025-01-01}' },
+  // Kick and Twitch chat
+  { name: 'roles', group: 'kick', platforms: CHAT, description: 'The user’s chat badges (moderator, VIP, subscriber…)', insert: '{roles}' },
+  { name: 'submonths', group: 'kick', platforms: CHAT, description: 'The user’s subscriber months (from their badge)', insert: '{submonths}' },
   // Discord only
   { name: 'mention', group: 'discord', platforms: DISCORD, description: 'A clickable @mention of the user (never pings)', insert: '{mention}' },
   { name: 'server', group: 'discord', platforms: DISCORD, description: 'The server’s name', insert: '{server}' },
@@ -341,7 +341,7 @@ function valueOf(t: VariableToken, d: VariableData, platform: VariablePlatform):
     case 'channel':
       return d.channel ?? null;
     case 'platform':
-      return platform === 'kick' ? 'Kick' : 'Discord';
+      return platform === 'kick' ? 'Kick' : platform === 'twitch' ? 'Twitch' : 'Discord';
     case 'commands':
       return d.commands?.length ? d.commands.join(', ') : null;
     case 'streamer':

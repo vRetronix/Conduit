@@ -53,10 +53,6 @@ export function BackupPanel({ state, error, reload }: { state: BackupsState | nu
       <div className="about-head">
         <h2 id="backup-title">Backup &amp; Restore</h2>
       </div>
-      <p className="muted small">
-        A backup is a checked copy of everything you’ve set up in CONDUIT: commands, giveaways, notifications, moderation, settings and history. Your Discord and Kick
-        sign-ins aren’t in it: they stay encrypted on this PC and keep working after a restore.
-      </p>
       {error && <p className="text-bad small">{error}</p>}
       {!state && !error && <p className="muted">Loading…</p>}
       {state && (
@@ -154,8 +150,7 @@ export function BackupPanel({ state, error, reload }: { state: BackupsState | nu
             </div>
           )}
           <p className="muted small">
-            Folder: <code>{state.directory}</code>. Automatic backups beyond the number to keep are removed, oldest first. Manual and before-restore backups are never
-            removed automatically.
+            <code>{state.directory}</code>
           </p>
           {restoring && (
             <RestoreConfirm
@@ -237,7 +232,6 @@ function BackupSettingsForm({ state, onSaved }: { state: BackupsState; onSaved: 
         </Button>
         {result && <span className={`small ${result.ok ? 'text-ok' : 'text-bad'}`}>{result.text}</span>}
       </div>
-      <p className="muted small">Leave the folder empty to use the default ({state.defaultDirectory}). Existing backups stay where they are when you change it.</p>
     </fieldset>
   );
 }
@@ -290,7 +284,6 @@ export function LogsSection() {
       <div className="about-head">
         <h2 id="logs-title">Logs</h2>
       </div>
-      <p className="muted small">What CONDUIT recorded while running, newest first. Secrets (tokens, passwords, keys) are always removed before anything is shown.</p>
       <div className="log-filters">
         {LOG_VIEW_LEVELS.map((l) => (
           <label key={l} className="inline-check">
@@ -363,7 +356,7 @@ export function LogList({ view }: { view: LogsView }) {
           ))}
         </ol>
       )}
-      {view.truncated && <p className="muted small">Showing the most recent matching entries. Older ones are in the log files.</p>}
+      {view.truncated && <p className="muted small">Most recent entries only.</p>}
     </>
   );
 }

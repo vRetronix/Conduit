@@ -47,12 +47,6 @@
   object-fit: contain;
 }
 
-.brand-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .brand-name {
   font-weight: 700;
   font-size: 16px;
@@ -60,16 +54,10 @@
   color: var(--accent-2);
 }
 
-.brand-tagline {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
 nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .sidebar nav {
@@ -217,19 +205,6 @@ nav {
   white-space: nowrap;
 }
 
-.nav-group-planned .nav-item {
-  color: var(--faint);
-}
-
-.nav-phase {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--faint);
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-}
-
 /* Always visible at the bottom of the sidebar: outside the scrolling navigation, so nothing can pass under it. */
 .sidebar-footer {
   flex: none;
@@ -237,11 +212,8 @@ nav {
   padding: 10px 10px 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   border-top: 1px solid var(--border);
-  color: var(--faint);
-  font-size: 11px;
 }
 
 .sidebar-footer .nav-item {
@@ -251,21 +223,11 @@ nav {
   font-weight: 600;
 }
 
-/* The version, with "built by Retronix" under it. */
-.sidebar-version {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  padding-right: 10px;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-}
-
 .sidebar-credit {
+  flex: none;
+  padding-right: 10px;
   font-size: 10px;
-  opacity: 0.85;
+  color: var(--faint);
 }
 
 .content {
@@ -283,28 +245,28 @@ nav {
 
 .topbar {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
-.topbar-title {
-  min-width: 0;
+/* The page's main actions: in the header after the title (and the backend pill, when shown). */
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.page-actions:empty {
+  display: none;
 }
 
 .topbar h1 {
-  margin: 0;
+  margin: 0 auto 0 0;
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.5px;
-}
-
-.topbar-summary {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  max-width: 720px;
 }
 
 .card {
@@ -327,27 +289,10 @@ nav {
   margin-top: -6px;
 }
 
-.planned {
-  max-width: 640px;
-  padding: 24px;
-}
-
-.planned h2 {
-  margin-top: 12px;
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 18px;
-  color: var(--text);
-}
-
 .stack {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
-}
-
-.empty-state {
-  text-align: left;
 }
 
 /* ── Navigation by platform; "Soon" is always gray ─────────────────────── */
@@ -405,16 +350,19 @@ nav {
   opacity: 0.6;
 }
 
-.nav-phase,
-.badge-soon {
-  color: var(--soon) !important;
-  background: transparent !important;
-  border: 1px solid color-mix(in srgb, var(--soon) 55%, transparent) !important;
+/* A platform that is only its heading until it's built. */
+.nav-group-label.nav-group-soon,
+.nav-group-label.nav-group-soon:hover {
+  color: var(--faint);
+  cursor: default;
 }
 
 .nav-phase {
+  color: var(--soon);
+  border: 1px solid color-mix(in srgb, var(--soon) 55%, transparent);
   font-size: 10px;
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 999px;
 }
+

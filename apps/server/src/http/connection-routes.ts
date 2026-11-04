@@ -49,6 +49,21 @@ async function commandsHub(services: Services, platform: CommandPlatform): Promi
       recent,
     };
   }
+  if (platform === 'twitch') {
+    const t = services.twitchChat.state();
+    const live = t.receive.status === 'connected';
+    let twitchNote: string | null = null;
+    if (!live) twitchNote = 'Commands respond only while Twitch chat is connected (Dashboard → Twitch → Manage).';
+    else if (!t.send.ready) twitchNote = t.send.problem ?? 'The chatbot account can’t send chat messages yet.';
+    return {
+      platform,
+      defaults: [],
+      custom,
+      ready: { ok: live && t.send.ready, note: twitchNote, sendAs: t.send.accountName, channel: t.send.channel },
+      registration: null,
+      recent,
+    };
+  }
   const chat = services.kickChat.state();
   const receiving = chat.receive.status === 'connected';
   let note: string | null = null;
@@ -127,6 +142,31 @@ export function createConnectionRouter(services: Services): Router {
   // The Client Secret arrives here once and goes straight to the encrypted vault; responses never include it.
   router.post('/kick/application', async (req, res) => {
     res.json(await kick.saveApplication(req.body));
+  });
+
+  // ── Twitch setup ──────────────────────────────────────────────────────────
+
+  router.get('/twitch/setup', async (_req, res) => {
+    res.json(await services.twitch.state());
+  });
+
+  // The Client Secret arrives here once and goes straight to the encrypted vault; responses never include it.
+  router.post('/twitch/application', async (req, res) => {
+    res.json(await services.twitch.saveApplication(req.body));
+  });
+
+  router.post('/twitch/chatbot', async (req, res) => {
+    res.json(await services.twitch.setChatbot(req.body));
+  });
+
+  // Posts to live Twitch chat: only on an explicit user action (validated on the backend; never automatic).
+  router.post('/twitch/chat/send', async (req, res) => {
+    res.json(await services.twitchChat.send(req.body));
+  });
+
+  router.post('/twitch/chat/retry', async (_req, res) => {
+    await services.twitchChat.ensure();
+    res.json(await services.twitch.state());
   });
 
   router.post('/kick/chatbot', async (req, res) => {

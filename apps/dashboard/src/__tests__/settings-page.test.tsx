@@ -29,25 +29,22 @@ describe('Settings', () => {
   it('shows the version from the app, its channel and build type', () => {
     const html = renderToStaticMarkup(<SettingsView info={info('0.4.0')} releases={NOTES} />);
     const t = text(html);
-    expect(t).toContain('About CONDUIT v0.4.0');
+    expect(t).toContain('About CONDUIT v0.4.0 Initial development Build Development build Platform Windows');
     expect(t).not.toContain('More settings');
     expect(html).not.toMatch(/<input|<select|<textarea/);
-    expect(t).toContain('Release channel Initial development');
-    expect(t).toContain('Development build (running from source)');
-    expect(t).toContain('Platform Windows');
-    expect(t).toContain('doesn’t check for updates online');
+    expect(t).not.toMatch(/Release channel|doesn’t check for updates online/);
     expect(t).not.toMatch(/update available/i);
   });
 
   it('labels channels only from the version', () => {
-    expect(text(renderToStaticMarkup(<SettingsView info={info('1.2.0', true)} releases={[]} />))).toContain('Release channel Stable');
-    expect(text(renderToStaticMarkup(<SettingsView info={info('1.3.0-beta.1', true)} releases={[]} />))).toContain('Release channel Beta');
+    expect(text(renderToStaticMarkup(<SettingsView info={info('1.2.0', true)} releases={[]} />))).toContain('v1.2.0 Stable');
+    expect(text(renderToStaticMarkup(<SettingsView info={info('1.3.0-beta.1', true)} releases={[]} />))).toContain('v1.3.0-beta.1 Beta');
     expect(text(renderToStaticMarkup(<SettingsView info={info('1.2.0', true)} releases={[]} />))).toContain('Build Installed app');
   });
 
   it('shows dashes, not a made-up version, before the app info arrives', () => {
     const html = renderToStaticMarkup(<SettingsView info={null} releases={NOTES} />);
-    expect(text(html)).toContain('Version — Release channel —');
+    expect(text(html)).toContain('Build — Platform —');
     expect(html).not.toContain('about-version');
   });
 
@@ -108,7 +105,6 @@ describe('Settings → Backup & Restore, Logs', () => {
     expect(t).toMatch(/Manual 371\.1 KB OK when made/);
     expect(t).toMatch(/Automatic 1\.2 KB Unverified/);
     expect(t).toContain('Back up automatically once a day');
-    expect(t).toContain('Manual and before-restore backups are never removed automatically');
     // The unverified backup's Restore button is disabled.
     expect(html.match(/<button[^>]*>Restore…<\/button>/g)!.filter((b) => b.includes('disabled'))).toHaveLength(1);
   });
@@ -153,7 +149,7 @@ describe('Settings → Backup & Restore, Logs', () => {
     expect(t).toContain('Check Dashboard → Discord → Manage.');
     expect(html).toContain('&quot;code&quot;: 4004');
     expect(t).toContain('desktop.log doesn’t exist yet.');
-    expect(t).toContain('Showing the most recent matching entries');
+    expect(t).toContain('Most recent entries only.');
     expect(text(renderToStaticMarkup(<LogList view={{ entries: [], modules: [], truncated: false, problems: [], folder: '' }} />))).toContain('No log entries match these filters.');
   });
 });

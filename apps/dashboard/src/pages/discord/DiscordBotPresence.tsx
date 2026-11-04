@@ -70,17 +70,16 @@ export function StatusUpdates({ state, onSaved }: { state: PresenceState; onSave
   return (
     <section className="card" aria-labelledby="presence-status">
       <h2 id="presence-status">Status Updates</h2>
-      <p className="muted small">The bot’s own online status and an optional custom status line under its name.</p>
       <div className="presence-form">
         <Select label="Status" value={status} onChange={(v) => setStatus(v as BotStatus)} options={BOT_STATUSES.map((s) => ({ value: s, label: BOT_STATUS_LABEL[s] }))} />
         <Field
-          label="Custom status (optional)"
+          label="Custom status"
           value={custom}
           onChange={setCustom}
           maxLength={PRESENCE_TEXT_MAX}
           placeholder="e.g. Keeping the server tidy"
           error={fieldError('customStatus', problems, error)}
-          hint={saved?.activity ? 'Discord shows one line under a bot’s name: the Rich Presence activity replaces this while it is on.' : `Up to ${PRESENCE_TEXT_MAX} characters.`}
+          hint={saved?.activity ? 'Hidden while the activity below is on.' : undefined}
         />
       </div>
       <ErrorBanner error={error} />
@@ -109,7 +108,6 @@ export function RichPresenceUpdates({ state, onSaved }: { state: PresenceState; 
   return (
     <section className="card" aria-labelledby="presence-activity">
       <h2 id="presence-activity">Rich Presence Updates</h2>
-      <p className="muted small">The activity shown on the bot’s profile and in the member list, e.g. “Watching the stream”.</p>
       <label className="switch">
         <input type="checkbox" checked={on} onChange={(e) => setOn(e.target.checked)} /> Show an activity
       </label>
@@ -126,7 +124,7 @@ export function RichPresenceUpdates({ state, onSaved }: { state: PresenceState; 
             hint={`Shown as “${BOT_ACTIVITY_HELP[type].shownAs} ${name.trim() || '…'}”.`}
           />
           {type === 'streaming' && (
-            <Field label="Stream link" value={url} onChange={setUrl} placeholder="https://twitch.tv/yourchannel" error={fieldError('activity.url', problems, error)} hint="A Twitch or YouTube link: Discord shows Streaming only with one." />
+            <Field label="Stream link" value={url} onChange={setUrl} placeholder="https://twitch.tv/yourchannel" error={fieldError('activity.url', problems, error)} />
           )}
         </div>
       )}
@@ -136,7 +134,6 @@ export function RichPresenceUpdates({ state, onSaved }: { state: PresenceState; 
           {on ? 'Save and apply activity' : 'Save and remove activity'}
         </Button>
       </div>
-      <p className="muted small">Bots can show an activity type and its text (and a Twitch or YouTube link for Streaming).</p>
     </section>
   );
 }

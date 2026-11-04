@@ -1,6 +1,7 @@
 /**
- * Custom commands for Discord and Kick: storage, validation and last-run diagnostics. Execution is platform-specific
- * and lives elsewhere (Kick: KickCommandService on the chat feed; Discord: slash commands through
+ * Custom commands for Discord, Kick and Twitch: storage, validation and last-run diagnostics. Execution is
+ * platform-specific and lives elsewhere (Kick: KickCommandService; Twitch: TwitchCommandService, both on their chat
+ * feed; Discord: slash commands through
  * DiscordCommandService). Both render responses with renderTemplate() from @conduit/shared.
  *
  * Diagnostics are in memory only and hold the trigger and outcome — never chat text.
@@ -31,7 +32,7 @@ const RECENT_LIMIT = 20;
 
 export class CustomCommandService {
   private readonly runs = new Map<string, { lastRun: CommandRun; runs: number }>();
-  private readonly recent: Record<CommandPlatform, CommandsHubState['recent']> = { discord: [], kick: [] };
+  private readonly recent: Record<CommandPlatform, CommandsHubState['recent']> = { discord: [], kick: [], twitch: [] };
   private readonly listeners: Array<(platform: CommandPlatform) => void> = [];
   /** In-memory cooldowns (reset on restart). */
   private readonly cooldowns: CooldownTracker;

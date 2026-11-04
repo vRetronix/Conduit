@@ -27,6 +27,7 @@ import { DISCORD_LOG_ENTRIES_MIGRATION_SQL } from './migrations/026-discord-log-
 import { DISCORD_MESSAGE_TEXTS_MIGRATION_SQL } from './migrations/027-discord-message-texts';
 import { KICK_CLIPS_MIGRATION_SQL } from './migrations/028-kick-clips';
 import { KICK_MODERATION_MIGRATION_SQL } from './migrations/029-kick-moderation';
+import { TWITCH_COMMANDS_MIGRATION_SQL } from './migrations/030-twitch-commands';
 
 /**
  * The application's schema history. Append new migrations; never edit or reorder released ones
@@ -74,4 +75,5 @@ export const migrations: readonly Migration[] = [
   { version: 27, name: 'discord_message_texts', up: DISCORD_MESSAGE_TEXTS_MIGRATION_SQL },
   { version: 28, name: 'kick_clips', up: KICK_CLIPS_MIGRATION_SQL },
   { version: 29, name: 'kick_moderation', up: KICK_MODERATION_MIGRATION_SQL },
+  { version: 30, name: 'twitch_commands', up: TWITCH_COMMANDS_MIGRATION_SQL },
 ];

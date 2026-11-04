@@ -48,7 +48,7 @@ describe('app start', () => {
     const html = await renderApp(stubBridge);
     expect(html).toContain('aria-label="Connect Accounts"');
     expect(html).toContain('<h1>Dashboard</h1>');
-    expect(html).toContain('Connect and manage your platform accounts.');
+    expect(html).not.toContain('Connect and manage your platform accounts.');
     // The cards stand on their own: no section heading or intro above them.
     expect(html).not.toContain('<h2 id="connect-accounts-title">');
     expect(html).not.toContain('official authorization page in your browser');
@@ -74,7 +74,7 @@ describe('app start', () => {
     // No separate Discord Bot / Kick Accounts pages either: the Dashboard cards (with Manage) are where accounts are managed.
     expect(SECTIONS.map((s) => s.id)).not.toEqual(expect.arrayContaining(['discord-setup']));
     expect(SECTIONS.filter((s) => ['discord-setup', 'kick-setup', 'bot-accounts'].includes(s.id))).toEqual([]);
-    expect(SECTIONS.find((s) => s.id === 'commands')?.phase).toBeNull();
+    expect(SECTIONS.find((s) => s.id === 'commands')?.soon).toBeUndefined();
     // …while the dashboard itself still shows the section.
     expect(html).toContain('<section class="connect-accounts" aria-label="Connect Accounts">');
   });

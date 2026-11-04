@@ -122,16 +122,16 @@ describe('Commands → Discord', () => {
     expect([...defaults.matchAll(/<code title="[^"]*">\/(\w+)<\/code>/g)].map((m) => m[1])).toEqual(['ping', 'timeout', 'untimeout', 'ban', 'unban', 'points', 'rewards', 'redeem', 'level', 'leaderboard']);
   });
 
-  it('the Message column shows the reply with its {variables} marked, then an example of using the command', async () => {
+  it('the Message column shows the reply with its {variables} marked; the example is in the tooltip', async () => {
     const { CommandsView } = await import('../pages/community/CommandsPage');
     const o: DiscordCommandsOverview = {
       commands: [cmd({ name: 'timeout', options: ['user', 'minutes', '[reason]'], example: '/timeout user:@troll minutes:10', message: 'I’ve timed out {user} for {minutes} minutes.' })],
     };
     const html = renderToStaticMarkup(<CommandsView s={hub} discordDefaults={o} />);
     expect(row(html, 'timeout')).toContain(
-      '<td class="cell-wrap"><span class="command-message">I’ve timed out <code class="command-var">{user}</code> for <code class="command-var">{minutes}</code> minutes.</span><div class="muted small command-example">Example: <code>/timeout user:@troll minutes:10</code></div></td>',
+      '<td class="cell-wrap"><span class="command-message">I’ve timed out <code class="command-var">{user}</code> for <code class="command-var">{minutes}</code> minutes.</span></td>',
     );
-    expect(row(html, 'timeout')).toContain('<code title="timeout description">/timeout</code>');
+    expect(row(html, 'timeout')).toContain('<code title="timeout description\n/timeout user:@troll minutes:10">/timeout</code>');
   });
 
   it('each row starts with its on / off switch; Access is plain text; a command on but inactive says why', async () => {
@@ -142,7 +142,7 @@ describe('Commands → Discord', () => {
     expect(row(html, 'unban')).toMatch(/aria-label="\/unban off"(?![^>]*checked)/);
     expect(row(html, 'timeout')).toContain('<td class="small">Moderator</td>');
     expect(row(html, 'ban')).toContain('<td class="small">Admin</td>');
-    expect(text(row(html, 'points'))).toContain('No reply in chat Loyalty &amp; Rewards is off');
+    expect(text(row(html, 'points'))).toContain('No reply Loyalty &amp; Rewards is off');
   });
 
   it('the Kick and Discord tables use the same markup', async () => {
@@ -162,7 +162,6 @@ describe('Commands → Discord', () => {
     expect(options(row(html, 'timeout'))).toEqual(['admin', 'moderator']);
     expect(row(html, 'ban')).toMatch(/<option value="admin" selected="">Admin/);
     expect(row(html, 'unban')).toMatch(/aria-label="\/unban off"(?![^>]*checked)/);
-    expect(text(html)).toContain('Moderation commands also need their Discord permission');
     expect(text(html)).toContain('Done');
   });
 
@@ -192,7 +191,7 @@ describe('Commands → Discord', () => {
     const t = text(await renderPresence({ saved, applied: { state: 'sent', at: '2026-10-17T12:00:00Z', presence: saved, problem: null }, botConnected: true, history: [] }));
     for (const gone of ['Sent to Discord', 'Nothing saved', 'Not applied', 'A bot can’t change', 'Rich Presence features for games', 'Images, buttons'])
       expect(t).not.toContain(gone);
-    expect(t).toContain('Bots can show an activity type and its text (and a Twitch or YouTube link for Streaming).');
+    expect(t).not.toContain('Bots can show an activity type');
   });
 
 });

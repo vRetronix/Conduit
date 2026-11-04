@@ -149,6 +149,7 @@ async function main(): Promise<void> {
     services.connections.startBackgroundVerification();
     void services.discord.startBot().catch((err) => logger.error('could not start the discord bot', { err }));
     void services.kickChat.start().catch((err) => logger.error('could not start kick chat', { err }));
+    void services.twitchChat.start().catch((err) => logger.error('could not start twitch chat', { err }));
   } catch (err) {
     logger.error('startup failed', { err });
     notifyParent({ type: 'fatal', message: err instanceof Error ? err.message : String(err) });

@@ -20,7 +20,7 @@ import type { ChatCommandRecord } from '@conduit/database';
 import type { Logger } from '@conduit/logger';
 import { PLATFORM_RULES, renderCommand, type CommandRun, type KickDefaultCommandDefinition } from '@conduit/shared';
 import type { CommandVariableService } from '../community/command-variable-service';
-import { deniedMessage, kickAllows, kickRoles } from '../community/command-access';
+import { deniedMessage, chatAllows, kickRoles } from '../community/command-access';
 import type { CustomCommandService } from '../community/custom-command-service';
 import type { KickChatMessage, KickChatService } from './kick-chat-service';
 import type { KickDefaultCommandService } from './kick-default-commands';
@@ -98,7 +98,7 @@ export class KickCommandService {
       }
 
       // Permission, from the verified event (sender id vs channel owner, Kick's badge types). Blocked silently in chat.
-      if (!kickAllows(command.permission, kickRoles({ userId: m.senderUserId, badgeTypes: m.badgeTypes }, m.broadcasterUserId))) {
+      if (!chatAllows(command.permission, kickRoles({ userId: m.senderUserId, badgeTypes: m.badgeTypes }, m.broadcasterUserId))) {
         return this.o.commands.record(command, 'blocked', deniedMessage('kick', command.permission));
       }
 
@@ -121,8 +121,8 @@ export class KickCommandService {
     const defaults = this.o.defaults!;
     if (!this.notFromChatbot({ message: m }).allow) return;
     const roles = kickRoles({ userId: m.senderUserId, badgeTypes: m.badgeTypes }, m.broadcasterUserId);
-    if (!kickAllows(d.permission, roles)) return defaults.record(d.trigger, 'blocked', deniedMessage('kick', d.permission));
-    const privileged = kickAllows('moderator', roles);
+    if (!chatAllows(d.permission, roles)) return defaults.record(d.trigger, 'blocked', deniedMessage('kick', d.permission));
+    const privileged = chatAllows('moderator', roles);
     const admission = defaults.admit(d, privileged);
     if (!admission.ok) return defaults.record(d.trigger, 'blocked', `On cooldown (${admission.remainingSeconds} s left).`);
     if (this.queue.length >= QUEUE_LIMIT) {
@@ -159,7 +159,7 @@ export class KickCommandService {
         chatKey: m.broadcasterUserId,
         args,
         message: m.content,
-        kick: { roles: m.badges, subMonths: m.subscriberMonths ?? null },
+        chat: { roles: m.badges, subMonths: m.subscriberMonths ?? null },
       });
       const reply = renderCommand(command.response, data, 'kick');
       if (!reply) {

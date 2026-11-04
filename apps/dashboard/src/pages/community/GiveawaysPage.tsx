@@ -20,6 +20,7 @@ import {
 import { api, ApiClientError, errorMessage } from '../../api';
 import { BrowserTabs } from '../../components/BrowserTabs';
 import { Button, Field, fieldError, Loading, schemaFieldErrors } from '../../components/forms';
+import { PageActions } from '../../components/PageActions';
 import { Pager, usePaged } from '../../components/Pager';
 import { KickGiveawayMessagesCard } from '../../components/kick/KickGiveawayMessages';
 import { useAsync, useBackendStatus, usePolling } from '../../hooks';
@@ -55,7 +56,7 @@ export function GiveawaysPage() {
 
 /**
  * Giveaways, on two browser-style tabs: **Giveaways** (the one running, then the completed ones as a compact list that
- * opens for details) and **Messages** (what the Kick chatbot posts). How viewers enter is a one-line hint.
+ * opens for details) and **Messages** (what the Kick chatbot posts).
  */
 export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: GiveawaysState; onChanged?: () => void; initialTab?: 'giveaways' | 'messages' }) {
   const [tab, setTab] = useState(initialTab);
@@ -66,6 +67,11 @@ export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: G
   const paged = usePaged(completed);
   return (
     <div className="stack">
+      {tab === 'giveaways' && !creating && (
+        <PageActions>
+          <Button onClick={() => setCreating(true)}>New giveaway</Button>
+        </PageActions>
+      )}
       <BrowserTabs
         idPrefix="giveaways"
         label="Giveaways"
@@ -78,11 +84,6 @@ export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: G
         panels={{
           giveaways: (
             <div className="stack">
-              {!creating && (
-                <div className="commands-actions">
-                  <Button onClick={() => setCreating(true)}>New giveaway</Button>
-                </div>
-              )}
               {creating && (
                 <GiveawayEditor
                   initial={null}
@@ -101,7 +102,7 @@ export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: G
                   Current giveaway
                 </h3>
                 {active.length === 0 ? (
-                  <p className="empty-note">No giveaway is running. Start one with New giveaway; it’s announced on the platforms you pick.</p>
+                  <p className="empty-note">No giveaway running.</p>
                 ) : (
                   active.map((g) => <GiveawayCard key={g.id} g={g} onChanged={onChanged} />)
                 )}
@@ -112,7 +113,7 @@ export function GiveawaysView({ s, onChanged, initialTab = 'giveaways' }: { s: G
                   Completed
                 </h3>
                 {completed.length === 0 ? (
-                  <p className="empty-note">Completed giveaways stay here with their winners and draw history.</p>
+                  <p className="empty-note">No completed giveaways yet.</p>
                 ) : (
                   <div className="giveaway-rows">
                     {paged.rows.map((g) => (
@@ -209,9 +210,8 @@ export function GiveawayCard({ g, onChanged, inset = false }: { g: GiveawayView;
               <strong>Time remaining:</strong> {g.endsAt ? remaining(g.endsAt) : 'until you end entries'}
             </li>
           )}
-          {g.status === 'closed' && <li className="text-warn">Entries are closed. Draw the winners when you’re ready.</li>}
           <li>
-            <strong>Entries (private):</strong> {g.entryCount}
+            <strong>Entries:</strong> {g.entryCount}
             {g.platforms.length > 1 && (
               <span className="muted"> ({g.platforms.map((p) => `${PLATFORM_LABEL[p]} ${g.entriesByPlatform[p]}`).join(' · ')})</span>
             )}{' '}
@@ -288,20 +288,20 @@ export function GiveawayCard({ g, onChanged, inset = false }: { g: GiveawayView;
       {confirm && (
         <div className="confirm-row" role="group" aria-label="Confirm">
           {confirm.action === 'cancel' && (
-            <span className="small">Cancel and delete this giveaway? Its entries and history are deleted. This can’t be undone.</span>
+            <span className="small">Cancel and delete this giveaway? This can’t be undone.</span>
           )}
           {confirm.action === 'delete' && (
-            <span className="small">Delete this completed giveaway? Its entries, winners and draw history are deleted; the Discord post stays. This can’t be undone.</span>
+            <span className="small">Delete this giveaway? The Discord post stays. This can’t be undone.</span>
           )}
           {confirm.action === 'draw' && (
             <span className="small">
               Draw {g.winnerCount} {g.winnerCount === 1 ? 'winner' : 'winners'} from {g.entryCount} {g.entryCount === 1 ? 'entry' : 'entries'} (
-              {g.ticketCount} tickets)? {g.status === 'open' && 'Entries close first. '}This can’t be undone.
+              {g.ticketCount} tickets)?
             </span>
           )}
           {confirm.action === 'redraw' && (
             <>
-              <span className="small">Replace {confirm.name} with a new random winner? {confirm.name} stays in the draw history.</span>
+              <span className="small">Replace {confirm.name} with a new random winner?</span>
               <input aria-label="Reason (optional)" placeholder="Reason (optional)" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
             </>
           )}
@@ -361,9 +361,6 @@ export function GiveawayCard({ g, onChanged, inset = false }: { g: GiveawayView;
             Delete giveaway
           </Button>
         </div>
-      )}
-      {(g.status === 'open' || g.status === 'closed') && g.entryCount === 0 && (
-        <p className="muted small">Nobody has entered yet, so there is nothing to draw.</p>
       )}
       {error && (
         <p className="connection-note note-error" role="alert">
@@ -579,7 +576,7 @@ export function GiveawayEditor({
     >
       <Field label="Prize" value={prize} onChange={setPrize} maxLength={GIVEAWAY_PRIZE_MAX} error={err('prize')} required />
       <div className="field">
-        <label htmlFor={`giveaway-description-${initial?.id ?? 'new'}`}>Description (optional)</label>
+        <label htmlFor={`giveaway-description-${initial?.id ?? 'new'}`}>Description</label>
         <textarea
           id={`giveaway-description-${initial?.id ?? 'new'}`}
           value={description}
@@ -600,7 +597,6 @@ export function GiveawayEditor({
             value={durationMinutes}
             onChange={setDurationMinutes}
             placeholder="Until you end it"
-            hint="Entries close automatically after this. Leave empty to end entries yourself."
             error={err('durationMinutes')}
           />
         )}
@@ -624,7 +620,7 @@ export function GiveawayEditor({
           {platforms.includes('discord') && <DiscordChannelPicker value={discordChannel} onChange={setDiscordChannel} error={err('discordChannel')} />}
           {kick && (
             <fieldset className="choice-list giveaway-tickets">
-              <legend className="small">Kick bonus tickets (optional)</legend>
+              <legend className="small">Kick bonus tickets</legend>
               <label>
                 <input
                   type="checkbox"
@@ -656,14 +652,8 @@ export function GiveawayEditor({
                   />
                 </div>
               )}
-              {rewardEnabled && (
-                <span className="field-hint">
-                  CONDUIT creates this reward on your Kick channel when the giveaway starts and removes it afterwards. Viewers type !enter first, then
-                  redeem; each accepted redemption adds the bonus tickets. Redemptions without an entry, or after entries close, are rejected.
-                </span>
-              )}
               <div className="field">
-                <label htmlFor="giveaway-multiplier">Active Kick subscribers</label>
+                <label htmlFor="giveaway-multiplier">Kick subscribers</label>
                 <select id="giveaway-multiplier" value={subscriberMultiplier} onChange={(e) => setSubscriberMultiplier(e.target.value)}>
                   {MULTIPLIERS.map((m) => (
                     <option key={m} value={String(m)}>
@@ -671,9 +661,6 @@ export function GiveawayEditor({
                     </option>
                   ))}
                 </select>
-                <span className="field-hint">
-                  Verified when they type !enter, from Kick’s subscriber badge on that message. Total tickets = (1 + bonus tickets) × multiplier.
-                </span>
               </div>
             </fieldset>
           )}
@@ -703,7 +690,7 @@ function DiscordChannelPicker({ value, onChange, error }: { value: string; onCha
   const selected = data?.guilds.flatMap((g) => g.channels.map((ch) => ({ key: `${g.id}:${ch.id}`, ch }))).find((x) => x.key === value)?.ch;
   return (
     <div className="field">
-      <label htmlFor="giveaway-discord-channel">Discord announcement channel</label>
+      <label htmlFor="giveaway-discord-channel">Discord channel</label>
       <select id="giveaway-discord-channel" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">Choose a channel…</option>
         {value && !known && <option value={value}>{loading ? 'Loading…' : 'Current channel (not found)'}</option>}
@@ -724,12 +711,7 @@ function DiscordChannelPicker({ value, onChange, error }: { value: string; onCha
         <span className="field-error">
           The bot is missing {selected.missing.join(', ')} in #{selected.name}. Fix the channel’s permissions in Discord, or choose another channel.
         </span>
-      ) : (
-        <span className="field-hint">
-          When you start, the bot posts the giveaway embed here with an Enter Giveaway button. Channels where the bot lacks permissions are
-          disabled.
-        </span>
-      )}
+      ) : null}
       {(loadError || data?.problem || data?.guilds.some((g) => g.problem)) && (
         <span className="field-hint text-warn">
           {loadError ? errorMessage(loadError) : (data?.problem ?? data?.guilds.find((g) => g.problem)?.problem)}{' '}

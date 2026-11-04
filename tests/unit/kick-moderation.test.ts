@@ -69,7 +69,7 @@ describe('migration 29', () => {
        VALUES ('00000000-0000-0000-0000-000000000001', '2026-10-01T00:00:00.000Z', 'kick', '1', 'retrolive', 'timeout', '42', 'troll', NULL, 60, 'spam', 'automod', 'RetroLive', 'spam', 'success', NULL)`,
     ).run();
     expect(() => db.prepare("UPDATE moderation_actions SET rule = 'links'").run()).toThrow(/CHECK/);
-    expect(migrate(db, migrations)).toEqual({ applied: [29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [29, 30], currentVersion: 30 });
     expect(moderationRepo.list(db, 10)).toEqual([expect.objectContaining({ id: '00000000-0000-0000-0000-000000000001', rule: 'spam', source: 'automod', durationSeconds: 60, targetName: 'troll' })]);
     moderationRepo.insert(db, {
       id: '00000000-0000-0000-0000-000000000002',

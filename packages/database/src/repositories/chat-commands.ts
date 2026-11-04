@@ -1,6 +1,6 @@
 import { execute, queryAll, queryOne, type Database } from '../sqlite';
 
-export type ChatCommandPlatform = 'kick' | 'discord';
+export type ChatCommandPlatform = 'kick' | 'discord' | 'twitch';
 export type ChatCommandPermission = 'everyone' | 'subscriber' | 'moderator' | 'broadcaster';
 export type ChatCommandCooldownMode = 'none' | 'user' | 'global';
 

@@ -34,9 +34,15 @@ describe('connection state (no CONDUIT account needed)', () => {
     for (const c of (await list()).body) {
       expect(c).toMatchObject({ status: 'not_connected', account: null, additionalAccounts: 0, authorizationAvailable: false, pending: false, lastAttempt: null, problem: null });
       // Discord is implemented but needs the user's own application first (the setup wizard).
-      // Discord and Kick are implemented but need the user's own app first; the others are not implemented yet.
+      // Discord, Kick and Twitch are implemented but need the user's own app first; the others are not implemented yet.
       expect(c.unavailableReason).toMatch(
-        c.platform === 'discord' ? /Select Connect to start the setup/ : c.platform === 'kick' ? /Kick isn't set up yet/ : /not been implemented/,
+        c.platform === 'discord'
+          ? /Select Connect to start the setup/
+          : c.platform === 'kick'
+            ? /Kick isn't set up yet/
+            : c.platform === 'twitch'
+              ? /Twitch isn't set up yet/
+              : /not been implemented/,
       );
     }
   });
@@ -64,12 +70,15 @@ describe('connection state (no CONDUIT account needed)', () => {
   });
 
   it('connect reports honestly that authorization is not implemented, and stores nothing', async () => {
-    for (const platform of PLATFORMS.filter((p) => p !== 'discord' && p !== 'kick')) {
+    for (const platform of PLATFORMS.filter((p) => p !== 'discord' && p !== 'kick' && p !== 'twitch')) {
       const res = await h.call('POST', `/api/connections/${platform}/connect`);
       expect(res.status).toBe(501);
       expect(res.body.error.code).toBe('not_implemented');
       expect(res.body.error.message).toMatch(/not available yet/);
     }
+    const twitch = await h.call('POST', '/api/connections/twitch/connect');
+    expect(twitch.status).toBe(503);
+    expect(twitch.body.error).toMatchObject({ code: 'not_configured', message: expect.stringMatching(/Twitch isn't set up yet/) });
     const kick = await h.call('POST', '/api/connections/kick/connect');
     expect(kick.status).toBe(503);
     expect(kick.body.error).toMatchObject({ code: 'not_configured', message: expect.stringMatching(/Kick isn't set up yet/) });

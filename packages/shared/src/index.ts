@@ -17,6 +17,7 @@ export * from './community/custom-commands';
 export * from './kick/kick-commands';
 export * from './kick/kick-clips';
 export * from './kick/kick-setup';
+export * from './twitch/twitch-setup';
 export * from './community/moderation';
 export * from './discord/embeds';
 export * from './community/timed-messages';

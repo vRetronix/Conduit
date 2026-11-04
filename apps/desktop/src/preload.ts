@@ -27,6 +27,9 @@ const bridge: ConduitBridge = {
     openDeveloperSettings: () => ipcRenderer.invoke(IPC_CHANNELS.kickOpenDeveloperSettings),
     openClip: (url) => ipcRenderer.invoke(IPC_CHANNELS.kickOpenClip, url),
   },
+  twitch: {
+    openDeveloperConsole: () => ipcRenderer.invoke(IPC_CHANNELS.twitchOpenDeveloperConsole),
+  },
   discord: {
     installBot: () => ipcRenderer.invoke(IPC_CHANNELS.discordInstallBot),
     openPortal: (page) => ipcRenderer.invoke(IPC_CHANNELS.discordOpenPortal, page),

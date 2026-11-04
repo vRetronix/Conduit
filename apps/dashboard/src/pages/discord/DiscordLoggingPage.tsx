@@ -5,14 +5,6 @@ import { DiscordChannelPicker, useDiscordChannels } from '../../components/disco
 import { Button } from '../../components/forms';
 import { useAsync, useBackendStatus, usePolling } from '../../hooks';
 
-const CATEGORY_HELP: Record<LogCategory, string> = {
-  moderation: 'Bans, unbans, kicks and timeouts from Discord’s audit log (who did it and why), plus CONDUIT’s /ban, /timeout… commands.',
-  members: 'Joins, leaves, nickname and role changes.',
-  messages: 'Deleted, edited and bulk-deleted messages, with jump links. While this is on, new messages’ text is kept for 7 days so deleted and edited ones can show what was written.',
-  server: 'Channels and roles created, deleted or changed.',
-  loyalty: 'Level-ups, XP and points adjustments, rewards redeemed and handled, level roles and resets, from Loyalty & Rewards.',
-};
-
 /**
  * Discord Logging (Carl-bot-style): each category of server events to a channel you choose. Part of the Discord Moderation
  * page, so it shows a short note while it loads rather than a full-page loader.
@@ -60,13 +52,7 @@ export function DiscordLoggingView({ s, onSaved }: { s: LoggingState; onSaved?: 
   return (
     <section className="card" aria-labelledby="logging-title">
       <div className="card-head">
-        <div>
-          <h2 id="logging-title">Discord logging</h2>
-          <p className="muted small">
-            Each category posts detailed embeds to a channel you choose; several categories can share one. Only completed actions are logged as done.
-            Everything logged is also listed in the Moderation log below.
-          </p>
-        </div>
+        <h2 id="logging-title">Discord logging</h2>
         {guilds.length > 1 && (
           <label className="field">
             <span className="field-label">Server</span>
@@ -91,10 +77,7 @@ export function DiscordLoggingView({ s, onSaved }: { s: LoggingState; onSaved?: 
                 <label className="switch">
                   <input type="checkbox" aria-label={`${LOG_CATEGORY_LABEL[c]} logging`} checked={cat.enabled} onChange={(e) => setCat(c, { enabled: e.target.checked })} />
                 </label>
-                <div>
-                  <strong>{LOG_CATEGORY_LABEL[c]}</strong>
-                  <div className="muted small">{CATEGORY_HELP[c]}</div>
-                </div>
+                <strong>{LOG_CATEGORY_LABEL[c]}</strong>
               </div>
               <DiscordChannelPicker
                 channels={channels ? { ...channels, guilds: channels.guilds.filter((g) => !guildId || g.id === guildId) } : null}

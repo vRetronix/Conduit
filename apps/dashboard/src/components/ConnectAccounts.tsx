@@ -5,6 +5,7 @@ import { bridge } from '../bridge';
 import { useAsync, useBackendStatus, usePolling } from '../hooks';
 import { DiscordConnect } from './discord/DiscordSetup';
 import { KickConnect } from './kick/KickSetup';
+import { TwitchConnect } from './twitch/TwitchSetup';
 import { Button } from './forms';
 import { PlatformIcon } from './PlatformIcon';
 
@@ -33,7 +34,7 @@ function Avatar({ account }: { account: NonNullable<PlatformConnectionSummary['a
 }
 
 /**
- * One platform's card (YouTube and Twitch; Discord and Kick have their own). Laid out like Kick's: the Account and
+ * One platform's card (YouTube; Discord, Kick and Twitch have their own). Laid out like Kick's: the Account and
  * Chatbot sections, then notes, with why connecting isn't available yet just above the button. Purely presentational:
  * everything shown comes from the backend summary.
  */
@@ -171,6 +172,8 @@ export function ConnectAccounts() {
             // Discord has its own card: account, application, bot and server statuses, and the setup wizard.
             c.platform === 'kick' ? (
               <KickConnect key={c.platform} />
+            ) : c.platform === 'twitch' ? (
+              <TwitchConnect key={c.platform} />
             ) : c.platform === 'discord' ? (
               <DiscordConnect key={c.platform} />
             ) : (

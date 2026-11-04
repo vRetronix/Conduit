@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { type DiscordEmbed } from '@conduit/shared/discord/embeds';
 import {
-  DEFAULT_NOTIFICATION_BUTTONS,
-  DEFAULT_NOTIFICATION_CONTENT,
-  DEFAULT_NOTIFICATION_EMBED,
   defaultNotificationLayout,
   NOTIFICATION_BUTTONS_MAX,
   NOTIFICATION_VARIABLES,
   notifierSchema,
   testNotificationSchema,
   type NotificationButton,
+  type NotificationPlatform,
   type NotifierView,
   type StreamNotificationsState,
 } from '@conduit/shared/kick/stream-notifications';
@@ -17,6 +15,7 @@ import { api, ApiClientError, errorMessage } from '../../api';
 import { DiscordChannelPicker, useDiscordChannels } from '../../components/discord/DiscordChannelPicker';
 import { EmbedEditor, EmbedPreview } from '../../components/discord/EmbedEditor';
 import { Button, Loading } from '../../components/forms';
+import { PageActions } from '../../components/PageActions';
 import { useAsync, useBackendStatus, usePolling } from '../../hooks';
 import thumbnailExample from '../../assets/kick/thumbnail-example.png';
 
@@ -37,50 +36,57 @@ const PREVIEW_VARS = {
 /** Bundled example pictures for the preview's sample image links. */
 const SAMPLE_IMAGES = { 'https://kick.com/sample-thumbnail': thumbnailExample };
 
+/** What differs between the platforms' notification pages. */
+const PLATFORM = {
+  kick: { name: 'Kick', site: 'kick.com', url: (slug: string) => `https://kick.com/${slug}`, strip: /^https?:\/\/(www\.)?kick\.com\//i, placeholder: 'channel name or kick.com link' },
+  twitch: { name: 'Twitch', site: 'twitch.tv', url: (slug: string) => `https://www.twitch.tv/${slug}`, strip: /^https?:\/\/(www\.|m\.)?twitch\.tv\//i, placeholder: 'channel name or twitch.tv link' },
+} satisfies Record<NotificationPlatform, { name: string; site: string; url: (slug: string) => string; strip: RegExp; placeholder: string }>;
+
 /** Kick Notifications: announce in Discord when Kick streamers go live. */
 export function KickNotificationsPage() {
+  return <StreamNotificationsPage platform="kick" />;
+}
+
+/** One platform's notifications page (Kick Notifications, Twitch Notifications). */
+export function StreamNotificationsPage({ platform }: { platform: NotificationPlatform }) {
   const backend = useBackendStatus();
   const { data, error, reload } = useAsync(() => api<StreamNotificationsState>('GET', '/api/notifications'), [backend?.state === 'running']);
   usePolling(reload, error ? 2000 : POLL_MS, [data, error]);
   if (!data) return <Loading label={error ? `Waiting for the CONDUIT backend… (${errorMessage(error)})` : 'Loading notifications…'} />;
-  return <KickNotificationsView s={data} onChanged={reload} />;
+  return <KickNotificationsView s={data} onChanged={reload} platform={platform} />;
 }
 
 type Editing = { mode: 'new' } | { mode: 'edit'; item: NotifierView } | null;
 
-export function KickNotificationsView({ s, onChanged }: { s: StreamNotificationsState; onChanged?: () => void }) {
+export function KickNotificationsView({ s, onChanged, platform = 'kick' }: { s: StreamNotificationsState; onChanged?: () => void; platform?: NotificationPlatform }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [checking, setChecking] = useState(false);
+  const p = PLATFORM[platform];
+  const source = s[platform];
+  const notifiers = s.notifiers.filter((n) => n.platform === platform);
   return (
     <div className="stack">
-      <section className="card" aria-labelledby="notify-title">
-        <div className="card-head">
-          <div>
-            <h2 id="notify-title">Kick live notifications</h2>
-            <p className="muted small">
-              Posts in Discord when a Kick streamer goes live — yours or anyone’s. CONDUIT checks Kick every {s.kick.pollSeconds} seconds while it’s running, using your
-              Kick app (public channel information; no rights over other channels). One post per stream.
-            </p>
-          </div>
-          <div className="button-row">
-            <Button
-              variant="secondary"
-              busy={checking}
-              onClick={() => {
-                setChecking(true);
-                void api('POST', '/api/notifications/check').finally(() => (setChecking(false), onChanged?.()));
-              }}
-            >
-              Check now
-            </Button>
-            {!editing && <Button onClick={() => setEditing({ mode: 'new' })}>Add streamer</Button>}
-          </div>
-        </div>
-        {s.notifiers.length === 0 && !editing ? (
-          <p className="empty-note">No streamers yet. Add your own channel or anyone else’s.</p>
+      <PageActions>
+        <Button
+          variant="secondary"
+          busy={checking}
+          title={`CONDUIT checks every ${source.pollSeconds} seconds`}
+          onClick={() => {
+            setChecking(true);
+            void api('POST', '/api/notifications/check').finally(() => (setChecking(false), onChanged?.()));
+          }}
+        >
+          Check now
+        </Button>
+        {!editing && <Button onClick={() => setEditing({ mode: 'new' })}>Add streamer</Button>}
+      </PageActions>
+      <section className="card" aria-label={`${p.name} streamers`}>
+        {!source.ready && source.problem && <p className="small text-warn">{source.problem}</p>}
+        {notifiers.length === 0 && !editing ? (
+          <p className="empty-note">No streamers yet.</p>
         ) : (
           <ul className="item-list">
-            {s.notifiers.map((n) => (
+            {notifiers.map((n) => (
               <NotifierRow key={n.id} n={n} onEdit={() => setEditing({ mode: 'edit', item: n })} onChanged={onChanged} />
             ))}
           </ul>
@@ -89,6 +95,7 @@ export function KickNotificationsView({ s, onChanged }: { s: StreamNotifications
       {editing && (
         <NotifierEditor
           key={editing.mode === 'edit' ? editing.item.id : 'new'}
+          platform={platform}
           initial={editing.mode === 'edit' ? editing.item : null}
           onClose={() => setEditing(null)}
           onSaved={() => {
@@ -125,7 +132,9 @@ function NotifierRow({ n, onEdit, onChanged }: { n: NotifierView; onEdit: () => 
       <div className="item-main">
         <div className="item-title">
           <strong>{n.displayName ?? n.channel}</strong>
-          <span className="muted small">kick.com/{n.channel} → {n.destination ?? 'Discord'}</span>
+          <span className="muted small">
+            {PLATFORM[n.platform].site}/{n.channel} → {n.destination ?? 'Discord'}
+          </span>
         </div>
         {n.live && n.title && (
           <div className="small">
@@ -175,14 +184,16 @@ export function DefaultLayoutBlock({
   previewVars,
   mention,
   onApply,
+  platform = 'kick',
 }: {
   current: Layout;
   previewVars: Record<string, string>;
   mention: string | null;
   onApply: (layout: Layout) => void;
+  platform?: NotificationPlatform;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const def = defaultNotificationLayout();
+  const def = defaultNotificationLayout(platform);
   const isDefault = JSON.stringify(current) === JSON.stringify(def);
   return (
     <fieldset className="editor-block">
@@ -209,7 +220,7 @@ export function DefaultLayoutBlock({
             mention={mention}
             buttons={def.buttons}
             note="Preview of the default layout with sample data."
-            imageLabels={{ image: 'Stream thumbnail (from Kick, when live)', thumb: 'Profile' }}
+            imageLabels={{ image: `Stream thumbnail (from ${PLATFORM[platform].name}, when live)`, thumb: 'Profile' }}
             imageSamples={SAMPLE_IMAGES}
           />
           <div className="button-row">
@@ -218,7 +229,7 @@ export function DefaultLayoutBlock({
             </Button>
             <Button
               onClick={() => {
-                onApply(defaultNotificationLayout());
+                onApply(defaultNotificationLayout(platform));
                 setConfirming(false);
               }}
             >
@@ -234,15 +245,17 @@ export function DefaultLayoutBlock({
   );
 }
 
-function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView | null; onClose: () => void; onSaved: () => void }) {
+function NotifierEditor({ initial, platform, onClose, onSaved }: { initial: NotifierView | null; platform: NotificationPlatform; onClose: () => void; onSaved: () => void }) {
   const channels = useDiscordChannels();
+  const p = PLATFORM[platform];
+  const [defaults] = useState(() => defaultNotificationLayout(platform));
   const [channel, setChannel] = useState(initial?.channel ?? '');
   const [guildId, setGuildId] = useState(initial?.guildId ?? '');
   const [channelId, setChannelId] = useState(initial?.channelId ?? '');
   const [roleId, setRoleId] = useState(initial?.roleId ?? '');
-  const [content, setContent] = useState(initial?.content ?? DEFAULT_NOTIFICATION_CONTENT);
-  const [embed, setEmbed] = useState<DiscordEmbed>(initial?.embed ?? structuredClone(DEFAULT_NOTIFICATION_EMBED));
-  const [buttons, setButtons] = useState<NotificationButton[]>(initial?.buttons ?? structuredClone(DEFAULT_NOTIFICATION_BUTTONS));
+  const [content, setContent] = useState(initial?.content ?? defaults.content);
+  const [embed, setEmbed] = useState<DiscordEmbed>(initial?.embed ?? defaults.embed);
+  const [buttons, setButtons] = useState<NotificationButton[]>(initial?.buttons ?? defaults.buttons);
   const [deleteWhenEnded, setDeleteWhenEnded] = useState(initial?.deleteWhenEnded ?? false);
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -251,9 +264,9 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
   const [busy, setBusy] = useState(false);
   const roles = channels?.guilds.find((g) => g.id === guildId)?.roles ?? [];
   const role = roles.find((r) => r.id === roleId);
-  const body = { platform: 'kick', channel, guildId, channelId, roleId: roleId || null, content, embed, buttons };
-  const sampleName = channel.replace(/^https?:\/\/(www\.)?kick\.com\//i, '').replace(/\/.*$/, '') || PREVIEW_VARS.streamer;
-  const previewVars = { ...PREVIEW_VARS, streamer: initial?.displayName ?? sampleName, url: `https://kick.com/${sampleName.toLowerCase()}` };
+  const body = { platform, channel, guildId, channelId, roleId: roleId || null, content, embed, buttons };
+  const sampleName = channel.replace(p.strip, '').replace(/\/.*$/, '') || PREVIEW_VARS.streamer;
+  const previewVars = { ...PREVIEW_VARS, streamer: initial?.displayName ?? sampleName, url: p.url(sampleName.toLowerCase()) };
 
   const issuesOf = (e: unknown) => (e instanceof ApiClientError && e.issues.length ? Object.fromEntries(e.issues.map((i) => [i.path, i.message])) : null);
 
@@ -302,14 +315,14 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
 
   return (
     <section className="card editor-card" aria-labelledby="notify-editor-title">
-      <h2 id="notify-editor-title">{initial ? `Edit ${initial.displayName ?? initial.channel}` : 'Add a Kick streamer'}</h2>
+      <h2 id="notify-editor-title">{initial ? `Edit ${initial.displayName ?? initial.channel}` : `Add a ${p.name} streamer`}</h2>
 
       <fieldset className="editor-block">
         <legend>Streamer and destination</legend>
         <div className="editor-grid">
           <label className="field">
-            <span className="field-label">Kick channel</span>
-            <input value={channel} placeholder="channel name or kick.com link" onChange={(e) => setChannel(e.target.value)} />
+            <span className="field-label">{p.name} channel</span>
+            <input value={channel} placeholder={p.placeholder} onChange={(e) => setChannel(e.target.value)} />
             {errors.channel && <span className="field-error">{errors.channel}</span>}
           </label>
           <DiscordChannelPicker channels={channels} guildId={guildId} channelId={channelId} needs={['viewChannel', 'sendMessages', 'embedLinks']} label="Post in" onChange={(g, ch) => (setGuildId(g), setChannelId(ch))} error={errors.channelId ?? errors.guildId} />
@@ -320,6 +333,7 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
         current={{ content, embed, buttons }}
         previewVars={previewVars}
         mention={role ? `@${role.name}` : null}
+        platform={platform}
         onApply={(d) => {
           setContent(d.content);
           setEmbed(d.embed);
@@ -356,8 +370,8 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
         <legend>Embed</legend>
         <p className="muted small">
           The stream thumbnail is the embed’s large <strong>Image</strong> (<code>{'{thumbnail}'}</code>), shown full width under the title and category; the profile
-          picture is the small <strong>Thumbnail</strong> (<code>{'{avatar}'}</code>). No author is needed — the bot posts the message. Kick’s public API doesn’t provide
-          follower counts, so they can’t be shown.
+          picture is the small <strong>Thumbnail</strong> (<code>{'{avatar}'}</code>). No author is needed — the bot posts the message.
+          {platform === 'kick' && ' Kick’s public API doesn’t provide follower counts, so they can’t be shown.'}
         </p>
         <EmbedEditor
           value={embed}
@@ -368,8 +382,8 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
             content,
             mention: role ? `@${role.name}` : null,
             buttons,
-            note: 'Sample data (stream title, category, images). Real notifications use Kick’s live data for this streamer.',
-            imageLabels: { image: 'Stream thumbnail (from Kick, when live)', thumb: 'Profile' },
+            note: `Sample data (stream title, category, images). Real notifications use ${p.name}’s live data for this streamer.`,
+            imageLabels: { image: `Stream thumbnail (from ${p.name}, when live)`, thumb: 'Profile' },
             imageSamples: SAMPLE_IMAGES,
           }}
         />
@@ -388,11 +402,11 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
           </div>
         ))}
         {buttons.length < NOTIFICATION_BUTTONS_MAX && (
-          <Button variant="ghost" className="btn btn-ghost btn-small" onClick={() => setButtons([...buttons, { label: buttons.length ? 'More' : 'Watch {streamer} on Kick!', url: buttons.length ? 'https://' : '{url}' }])}>
+          <Button variant="ghost" className="btn btn-ghost btn-small" onClick={() => setButtons([...buttons, { label: buttons.length ? 'More' : `Watch {streamer} on ${p.name}!`, url: buttons.length ? 'https://' : '{url}' }])}>
             + Add button
           </Button>
         )}
-        <p className="muted small">Real Discord link buttons under the embed. <code>{'{url}'}</code> is the streamer’s Kick channel; labels can use <code>{'{streamer}'}</code>.</p>
+        <p className="muted small">Real Discord link buttons under the embed. <code>{'{url}'}</code> is the streamer’s {p.name} channel; labels can use <code>{'{streamer}'}</code>.</p>
       </fieldset>
 
       <div className="card-foot">
@@ -424,10 +438,6 @@ function NotifierEditor({ initial, onClose, onSaved }: { initial: NotifierView |
           </Button>
         </div>
       </div>
-      <p className="muted small">
-        <strong>Send test</strong> posts this notification now, marked as a test, with the streamer’s real current Kick data (the role is shown but not pinged). A streamer
-        who is live when added is announced from their next stream.
-      </p>
     </section>
   );
 }

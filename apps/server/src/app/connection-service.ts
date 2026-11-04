@@ -55,6 +55,7 @@ export class ConnectionService {
   private readonly callbacks: OAuthCallbackServer;
   private readonly sweeper: NodeJS.Timeout;
   private verifier: NodeJS.Timeout | null = null;
+  private readonly frequentVerifiers: NodeJS.Timeout[] = [];
   private vaultProblem: string | null = null;
   private readonly purposeHandlers = new Map<string, PurposeCallbackHandler>();
   /** In-flight token refreshes per connection: rotating refresh tokens must never be used twice concurrently. */
@@ -311,7 +312,7 @@ export class ConnectionService {
     const existing = connectionsRepo.find(this.o.db, platform, identity.id);
     if (existing && existing.role !== role) {
       // Never let one flow silently take over the other role's account.
-      await adapter.revoke(tokens.refreshToken ?? tokens.accessToken, tokens.refreshToken ? 'refresh_token' : 'access_token').catch(() => undefined);
+      await revokeTokens(adapter, tokens).catch(() => undefined);
       throw new RoleConflictError(role);
     }
     const id = existing?.id ?? crypto.randomUUID();
@@ -398,9 +399,7 @@ export class ConnectionService {
     }
     if (adapter && tokens) {
       try {
-        // Revoking either token ends the whole authorization (Discord revokes all tokens of the grant).
-        if (tokens.refreshToken) await adapter.revoke(tokens.refreshToken, 'refresh_token');
-        else await adapter.revoke(tokens.accessToken, 'access_token');
+        await revokeTokens(adapter, tokens);
         revoked = true;
       } catch (err) {
         this.o.logger.warn('token revocation failed', { platform, kind: err instanceof OAuthError ? err.kind : 'unknown' });
@@ -419,20 +418,30 @@ export class ConnectionService {
 
   // ── verification ──────────────────────────────────────────────────────────
 
-  /** Starts periodic verification (refreshing tokens, detecting revoked authorizations). */
+  /**
+   * Starts periodic verification (refreshing tokens, detecting revoked authorizations): every account every 6 hours,
+   * and more often for platforms that require it (Twitch: hourly).
+   */
   startBackgroundVerification(): void {
     const run = () => void this.verifyAll().catch((err) => this.o.logger.error('connection verification failed', { err }));
     run();
     this.verifier = setInterval(run, VERIFY_INTERVAL_MS);
     this.verifier.unref();
+    for (const platform of PLATFORMS) {
+      const every = this.o.adapters[platform]?.verifyIntervalMs;
+      if (!every || every >= VERIFY_INTERVAL_MS) continue;
+      const timer = setInterval(() => void this.verifyAll(platform).catch((err) => this.o.logger.error('connection verification failed', { platform, err })), every);
+      timer.unref();
+      this.frequentVerifiers.push(timer);
+    }
   }
 
-  /** Checks every connected account with its platform. Network problems leave the status unchanged. */
-  async verifyAll(): Promise<void> {
+  /** Checks every connected account (or one platform's) with its platform. Network problems leave the status unchanged. */
+  async verifyAll(platform?: Platform): Promise<void> {
     if (await this.o.vault.unavailableReason()) return;
     for (const record of connectionsRepo.list(this.o.db)) {
       const adapter = this.o.adapters[record.platform];
-      if (!adapter || record.status !== 'connected') continue;
+      if (!adapter || record.status !== 'connected' || (platform && record.platform !== platform)) continue;
       await this.verify(record, adapter);
     }
   }
@@ -541,8 +550,18 @@ export class ConnectionService {
   async close(): Promise<void> {
     clearInterval(this.sweeper);
     if (this.verifier) clearInterval(this.verifier);
+    for (const timer of this.frequentVerifiers) clearInterval(timer);
     await this.callbacks.close();
   }
+}
+
+/**
+ * Revoking either token ends the whole authorization (Discord revokes all tokens of the grant): the refresh token when
+ * there is one, unless the platform only revokes access tokens (Twitch).
+ */
+function revokeTokens(adapter: OAuthAdapter, tokens: TokenSet): Promise<void> {
+  if (tokens.refreshToken && adapter.revokeWith !== 'access_token') return adapter.revoke(tokens.refreshToken, 'refresh_token');
+  return adapter.revoke(tokens.accessToken, 'access_token');
 }
 
 /** Why a platform with records but no working connection is unusable. */

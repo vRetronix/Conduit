@@ -14,7 +14,6 @@ import { EntityIcon } from '../EntityIcon';
 import { CopyButton } from '../CopyButton';
 import { Button, fieldError } from '../forms';
 import { PlatformIcon } from '../PlatformIcon';
-import { KickBotAccountCard } from './KickBotAccountCard';
 import { SetupWizard, SummaryItem, type WizardStep } from '../SetupWizard';
 
 const BUSY_POLL_MS = 1500;
@@ -29,7 +28,7 @@ export const CHAT_STATUS_LABEL: Record<KickChatReceiveStatus, string> = {
   permission_required: 'Permission required',
 };
 
-const CHAT_STATUS_TONE: Record<KickChatReceiveStatus, string> = {
+export const CHAT_STATUS_TONE: Record<KickChatReceiveStatus, string> = {
   disconnected: 'muted',
   connecting: 'text-warn',
   connected: 'text-ok',
@@ -240,25 +239,22 @@ export function kickWizardSteps(s: KickSetupState): Array<WizardStep<KickWizardS
   const account = s.primary.status === 'connected';
   const chatbotDone = s.chatbot.mode === 'primary' ? account : s.bot.status === 'connected';
   return [
-    { id: 'app', label: 'Kick App', description: 'Your own Kick app: its Client ID and Client Secret from Kick’s developer settings.', complete: app, reachable: true },
+    { id: 'app', label: 'Kick App', complete: app, reachable: true },
     {
       id: 'account',
       label: 'Your Account',
-      description: 'Connect your main Kick account — the streamer’s channel.',
       complete: account,
       reachable: app,
     },
     {
       id: 'chatbot',
       label: 'Chatbot',
-      description: 'Which Kick account CONDUIT’s chatbot posts as: your main account, or a separate bot account.',
       complete: chatbotDone,
       reachable: app && s.primary.status !== 'not_connected',
     },
     {
       id: 'chat',
       label: 'Live Chat',
-      description: 'Receive your channel’s chat (through a webhook tunnel) and check that messages arrive.',
       complete: s.chat.receive.status === 'connected',
       reachable: app && account,
     },
@@ -394,7 +390,7 @@ function KickAppSection({ s, onChanged }: { s: KickSetupState; onChanged: () => 
     <section className="stack" aria-label="Kick app">
       {!editing ? (
         <p>
-          Configured <span className="muted">(Client ID {s.application.clientId}; Client Secret stored encrypted)</span>{' '}
+          Client ID <code>{s.application.clientId}</code>{' '}
           <Button variant="ghost" onClick={() => setEditing(true)}>
             Change
           </Button>
@@ -402,8 +398,7 @@ function KickAppSection({ s, onChanged }: { s: KickSetupState; onChanged: () => 
       ) : (
         <>
           <p className="small">
-            CONDUIT connects through <strong>your own</strong> Kick app — there is no shared CONDUIT app. In Kick, open Account Settings
-            → Developer (two-factor authentication must be on), create an app, and set its redirect URL to exactly:
+            In Kick → Account Settings → Developer, create an app with this redirect URL:
           </p>
           <div className="copy-row">
             <code className="selectable">{s.redirectUri}</code>
@@ -439,9 +434,11 @@ function KickAppSection({ s, onChanged }: { s: KickSetupState; onChanged: () => 
                 aria-invalid={err('clientId') ? true : undefined}
                 aria-describedby="kick-client-id-note"
               />
-              <span id="kick-client-id-note" className={err('clientId') ? 'field-error' : 'field-hint'}>
-                {err('clientId') ?? 'Shown for your app in Kick’s developer settings.'}
-              </span>
+              {err('clientId') && (
+                <span id="kick-client-id-note" className="field-error">
+                  {err('clientId')}
+                </span>
+              )}
             </div>
             <div className="field">
               <label htmlFor="kick-client-secret">
@@ -469,9 +466,11 @@ function KickAppSection({ s, onChanged }: { s: KickSetupState; onChanged: () => 
                   {shown ? 'Hide' : 'Show'}
                 </Button>
               </div>
-              <span id="kick-client-secret-note" className={err('clientSecret') ? 'field-error' : 'field-hint'}>
-                {err('clientSecret') ?? 'Checked with Kick, then stored encrypted with Windows (DPAPI). It is never shown again.'}
-              </span>
+              {err('clientSecret') && (
+                <span id="kick-client-secret-note" className="field-error">
+                  {err('clientSecret')}
+                </span>
+              )}
             </div>
             {save.error && !(save.error instanceof ApiClientError && save.error.issues.length > 0) ? (
               <ErrorLine error={save.error} />
@@ -498,10 +497,6 @@ function KickPrimarySection({ s, onChanged }: { s: KickSetupState; onChanged: ()
   const p = s.primary;
   return (
     <section className="stack" aria-label="Your Kick account">
-      <p className="small">
-        Connect your <strong>main Kick account</strong> — the streamer’s channel. Kick’s own page opens in your browser and asks only to
-        read your profile and channel ({s.scopes.primary.join(', ')}). CONDUIT never sees your Kick password.
-      </p>
       {p.status !== 'not_connected' && <AccountLine a={p} />}
       {p.pending && (
         <p className="connection-note" role="status">
@@ -540,26 +535,21 @@ function KickChatbotSection({ s, onChanged }: { s: KickSetupState; onChanged: ()
   return (
     <section className="stack" aria-label="Chatbot account">
       <fieldset className="choice-list" disabled={action.busy}>
-        <legend className="small muted">Which Kick account should CONDUIT’s chatbot use?</legend>
+        <legend className="small">Chatbot account</legend>
         <label>
           <input type="radio" name="kick-chatbot" checked={s.chatbot.mode === 'primary'} onChange={() => setMode('primary')} /> Use my main
           account
-          <span className="muted small"> — simplest; nothing else to set up</span>
         </label>
         <label>
           <input type="radio" name="kick-chatbot" checked={s.chatbot.mode === 'separate'} onChange={() => setMode('separate')} /> Use a
           separate bot account
-          <span className="muted small"> — a second Kick account you own</span>
         </label>
       </fieldset>
 
       {s.chatbot.mode === 'separate' && (
         <>
           {b.status !== 'not_connected' && <AccountLine a={b} />}
-          <p className="small muted">
-            Kick signs in whoever is logged in to kick.com in your browser. Log in as the bot account first (or use a private window), then
-            select Add Bot Account.
-          </p>
+          {b.status === 'not_connected' && <p className="small">Log in to kick.com as the bot account first, or use a private window.</p>}
           {b.pending && (
             <p className="connection-note" role="status">
               <span className="spinner" aria-hidden="true" /> Waiting for you to approve CONDUIT with the bot account…
@@ -596,10 +586,8 @@ function KickChatbotSection({ s, onChanged }: { s: KickSetupState; onChanged: ()
           </div>
         </>
       )}
-      <p className="muted small">{s.chatbot.note}</p>
+      {!s.chatbot.ready && <p className="small text-warn">{s.chatbot.note}</p>}
       <ErrorLine error={action.error} />
-      {/* The bot account as Kick verified it, separate from the main account (no tokens). */}
-      <KickBotAccountCard s={s} />
     </section>
   );
 }
@@ -634,7 +622,6 @@ function KickChatSection({ s, onChanged }: { s: KickSetupState; onChanged: () =>
 
   return (
     <section className="stack" aria-label="Live chat">
-
       <p role="status">
         Receiving {s.primary.handle ?? s.primary.name}'s chat:{' '}
         <strong className={CHAT_STATUS_TONE[r.status]}>{CHAT_STATUS_LABEL[r.status]}</strong>
@@ -643,7 +630,7 @@ function KickChatSection({ s, onChanged }: { s: KickSetupState; onChanged: () =>
             {' '}
             {r.delivery === 'confirmed'
               ? `— ${r.messagesReceived} message${r.messagesReceived === 1 ? '' : 's'} received`
-              : '— subscribed; waiting for the first message to confirm your tunnel'}
+              : '— waiting for the first message'}
           </span>
         )}
       </p>
@@ -671,30 +658,24 @@ function KickChatSection({ s, onChanged }: { s: KickSetupState; onChanged: () =>
       </div>
 
       <details className="tunnel-help" open={r.delivery !== 'confirmed'}>
-        <summary>Set up the webhook tunnel (Kick only sends chat to a public address)</summary>
+        <summary>Webhook tunnel</summary>
         <ol className="portal-steps">
           <li>
-            Start a tunnel to CONDUIT's chat receiver on this PC — only this address is exposed, nothing else:
+            Start a tunnel to CONDUIT:
             <div className="copy-row">
               <code className="selectable">cloudflared tunnel --url {r.localTarget}</code>
               <CopyButton text={`cloudflared tunnel --url ${r.localTarget}`} />
             </div>
-            <span className="muted small">
-              (or <code>ngrok http {r.localTarget}</code>). Keep the tunnel running while you stream.
-            </span>
           </li>
           <li>
-            In Kick → Account Settings → Developer → your app → Edit, turn <strong>Enable Webhooks</strong> on and set the URL to the
-            tunnel's public https address followed by:
+            In Kick → Account Settings → Developer → your app, turn on <strong>Enable Webhooks</strong> with the tunnel’s https address
+            followed by:
             <div className="copy-row">
               <code className="selectable">{publicPath}</code>
               <CopyButton text={publicPath} />
             </div>
-            <span className="muted small">
-              Example: https://example.trycloudflare.com{publicPath}. A free quick tunnel's address changes each time it starts.
-            </span>
           </li>
-          <li>Send a message in your Kick chat. It appears below once Kick delivers it.</li>
+          <li>Send a message in your Kick chat.</li>
         </ol>
       </details>
 
@@ -711,16 +692,10 @@ function KickChatSection({ s, onChanged }: { s: KickSetupState; onChanged: () =>
             ))}
         </ul>
       ) : (
-        r.status === 'connected' && <p className="muted small">No messages received yet this session.</p>
+        r.status === 'connected' && <p className="muted small">No messages yet.</p>
       )}
 
       <h4>Send a test message</h4>
-      {send.account ? (
-        <p className="small">
-          Sends as <strong>{send.accountName}</strong> ({send.account === 'bot' ? 'bot account' : 'main account'}) to{' '}
-          <strong>{send.channel}</strong>'s live chat. Nothing is ever posted automatically.
-        </p>
-      ) : null}
       {send.problem && (
         <p className="connection-note note-warn" role="status">
           {send.problem}
@@ -728,12 +703,7 @@ function KickChatSection({ s, onChanged }: { s: KickSetupState; onChanged: () =>
       )}
       {send.missingScope && send.account && (
         <>
-          {send.account === 'bot' && (
-            <p className="muted small">
-              Kick asks whoever is signed in to kick.com: log in as {send.accountName} first (or use a private window). The extra permission
-              lets CONDUIT post chat messages as {send.accountName}.
-            </p>
-          )}
+          {send.account === 'bot' && <p className="small">Log in to kick.com as {send.accountName} first, or use a private window.</p>}
           <div className="button-row">
             <Button busy={action.busy} onClick={() => void action.run(() => connectKick(send.account!))}>
               {send.account === 'bot' ? 'Reauthorize bot account' : 'Reauthorize main account'}
@@ -759,14 +729,14 @@ function KickChatSection({ s, onChanged }: { s: KickSetupState; onChanged: () =>
               autoComplete="off"
             />
             <button type="submit" className="btn btn-primary" disabled={sending || !content.trim()} aria-busy={sending || undefined}>
-              {sending ? 'Sending…' : 'Send to live chat'}
+              {sending ? 'Sending…' : `Send as ${send.accountName}`}
             </button>
           </div>
         </form>
       )}
       {result && (
         <p className="connection-note text-ok" role="status">
-          Kick confirmed the message was posted as {result.as} in {result.channel}'s chat.
+          Posted as {result.as}.
         </p>
       )}
       <ErrorLine error={sendError} />

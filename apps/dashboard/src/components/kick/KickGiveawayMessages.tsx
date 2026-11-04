@@ -68,13 +68,12 @@ export function KickGiveawayMessagesCard({ saved, onSaved, bare = false }: { sav
       setOpen(firstBad);
       return;
     }
-    void save(Object.fromEntries(changed.map((k) => [k, draft[k]])), 'Saved. Nothing was sent.');
+    void save(Object.fromEntries(changed.map((k) => [k, draft[k]])), 'Saved.');
   };
 
   return (
     <section className={bare ? undefined : 'card'} aria-labelledby={bare ? undefined : 'giveaway-kick-messages'} aria-label={bare ? 'Kick chat messages' : undefined}>
       {!bare && <h2 id="giveaway-kick-messages">Kick chat messages</h2>}
-      <p className="muted small">What the chatbot posts in Kick chat during a giveaway. Saving sends nothing; ticket counts and odds are never posted.</p>
       <ul className="kmsg-list">
         {KICK_GIVEAWAY_MESSAGE_KINDS.map((k) => {
           const info = KICK_GIVEAWAY_MESSAGES[k];
@@ -124,7 +123,7 @@ export function KickGiveawayMessagesCard({ saved, onSaved, bare = false }: { sav
                   </span>
                 )}
                 <div className="kmsg-tools">
-                  {vars.length > 0 ? (
+                  {vars.length > 0 && (
                     <details className="kmsg-vars">
                       <summary>Available variables</summary>
                       <ul>
@@ -135,8 +134,6 @@ export function KickGiveawayMessagesCard({ saved, onSaved, bare = false }: { sav
                         ))}
                       </ul>
                     </details>
-                  ) : (
-                    <span className="muted small">No variables</span>
                   )}
                   {!isDefault && (
                     <Button variant="ghost" className="btn btn-ghost btn-small" disabled={busy} onClick={() => setDraft({ ...draft, [k]: info.default })}>

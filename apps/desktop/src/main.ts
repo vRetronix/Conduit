@@ -14,7 +14,7 @@ import { BackendSupervisor } from './backend-supervisor';
 import { FileCredentialVault, handleVaultRequest } from './credential-vault';
 import { connectRequestSchema, validateApiRequest, validateControlsColor, validateKickClipUrl } from './ipc-validation';
 import { LocalApiClient } from './local-api';
-import { discordPortalUrl, KICK_DEVELOPER_SETTINGS_URL, validateAuthorizationUrl, validateBotInstallUrl } from './oauth-launch';
+import { discordPortalUrl, KICK_DEVELOPER_SETTINGS_URL, TWITCH_DEVELOPER_CONSOLE_URL, validateAuthorizationUrl, validateBotInstallUrl } from './oauth-launch';
 import { isRecoveryInvocation, refuseRecoveryWhileRunning, runRecoveryMode } from './recovery-mode';
 import { buildContentSecurityPolicy, isPermissionAllowed, isTrustedRendererUrl, mimeTypeFor, resolveRendererPath } from './renderer-security';
 
@@ -282,6 +282,10 @@ function startDesktop(dataDir: string): void {
     });
     handle(IPC_CHANNELS.kickOpenDeveloperSettings, async (): Promise<ApiResult<{ opened: true }>> => {
       const opened = await openExternal(KICK_DEVELOPER_SETTINGS_URL);
+      return opened.ok ? { ok: true, status: 200, data: { opened: true } } : opened;
+    });
+    handle(IPC_CHANNELS.twitchOpenDeveloperConsole, async (): Promise<ApiResult<{ opened: true }>> => {
+      const opened = await openExternal(TWITCH_DEVELOPER_CONSOLE_URL);
       return opened.ok ? { ok: true, status: 200, data: { opened: true } } : opened;
     });
     handle(IPC_CHANNELS.kickOpenClip, async (arg): Promise<ApiResult<{ opened: true }>> => {

@@ -1,10 +1,10 @@
 # CONDUIT
 
-**The Link Between Everything.** A desktop app for running your Discord and Kick from one place.
+**The Link Between Everything.** A desktop app for running your Discord, Kick and Twitch from one place.
 
-- **Commands, giveaways and timed messages** for Discord and Kick chat
+- **Commands, giveaways and timed messages** for Discord and Kick chat, and **commands and timed messages** for Twitch chat
 - **Moderation** and protection for both
-- **Kick go-live notifications** and **clips** posted to Discord
+- **Kick and Twitch go-live notifications** and Kick **clips** posted to Discord
 - **Discord extras:** sticky messages, embeds, levels and rewards
 
 CONDUIT runs on your PC (Windows 10/11) and starts empty: you connect your own accounts and set everything up
@@ -26,9 +26,12 @@ There's no ready-made download yet, so you build the installer yourself. It take
    ```
 4. Run **apps\desktop\release\CONDUIT Setup X.Y.Z.exe**. If Windows shows "Windows protected your PC", select
    **More info → Run anyway**.
-5. Open CONDUIT and select **Connect** on Discord or Kick to start.
+5. Open CONDUIT and select **Connect** on Discord, Kick or Twitch to start.
 
 Step-by-step setup: [docs/SETUP.md](docs/SETUP.md). What's changed: [CHANGELOG.md](CHANGELOG.md).
+
+**Tip:** if the Twitch chatbot is a separate bot account, make it a moderator: type `/mod YourBotName` in your Twitch
+chat. Otherwise Twitch can drop its messages when your chat is in followers-only, subscribers-only or slow mode.
 
 ## Cloudflared setup
 

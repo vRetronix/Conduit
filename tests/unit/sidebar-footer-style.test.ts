@@ -1,4 +1,4 @@
-/** The sidebar footer (Settings, the version, the credit) never scrolls out of view, and nothing scrolls under it. */
+/** The sidebar footer (Settings and the credit) never scrolls out of view, and nothing scrolls under it. */
 import { describe, expect, it } from 'vitest';
 import { dashboardCss as css } from '../helpers/dashboard-css';
 

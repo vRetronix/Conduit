@@ -32,7 +32,9 @@ const localEnv = () => {
 };
 
 function launchElectron() {
-  electron = spawn(electronBinary, [path.join(root, 'apps/desktop')], {
+  // CONDUIT_DEBUG_PORT opens Chrome DevTools Protocol on that port, so a script can drive and screenshot the window.
+  const debugArgs = process.env.CONDUIT_DEBUG_PORT ? [`--remote-debugging-port=${process.env.CONDUIT_DEBUG_PORT}`] : [];
+  electron = spawn(electronBinary, [...debugArgs, path.join(root, 'apps/desktop')], {
     stdio: 'inherit',
     env: electronChildEnv({ ...localEnv(), ...process.env }, { CONDUIT_RENDERER_URL: rendererUrl, CONDUIT_DATA_DIR: dataDir }),
   });

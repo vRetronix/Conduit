@@ -113,18 +113,18 @@ async function renderDiscord(s: DiscordModerationState) {
 describe('navigation', () => {
   it('is organised by platform; every feature has exactly one place', async () => {
     const { SECTIONS, SECTION_GROUPS } = await import('../sections');
-    expect(SECTION_GROUPS.map((x) => x.label)).toEqual(['Overview', 'Discord', 'Kick', 'Twitch', 'YouTube', 'Coming later']);
-    const inGroup = (g: string) => SECTIONS.filter((s) => s.group === g).map((s) => (s.phase === null ? s.label : `${s.label} (Soon)`));
+    expect(SECTION_GROUPS.map((x) => x.label ?? '-')).toEqual(['-', 'Discord', 'Kick', 'Twitch', 'YouTube', '-']);
+    const inGroup = (g: string) => SECTIONS.filter((s) => s.group === g).map((s) => (s.soon ? `${s.label} (Soon)` : s.label));
     expect(inGroup('overview')).toEqual(['Dashboard', 'Commands', 'Giveaways', 'Timed Messages']);
     expect(inGroup('discord')).toEqual(['Discord Bot', 'Sticky Messages', 'Embed Creator', 'Loyalty & Rewards']);
     expect(inGroup('kick')).toEqual(['Kick Moderation', 'Kick Notifications', 'Clips']);
     // Connections are managed from the Dashboard's cards, not separate pages.
-    // (The Discord Bot page is the bot's settings, protection and logs — not account connections.)
     expect(SECTIONS.map((s) => s.label).filter((l) => /Kick Accounts|Bot Accounts|Connections/.test(l))).toEqual([]);
-    expect(SECTIONS.find((s) => s.label === 'Discord Bot')!.summary).not.toMatch(/connect|account/i);
-    expect(inGroup('twitch')).toEqual(['Twitch Notifications (Soon)', 'Twitch Moderation (Soon)']);
-    expect(inGroup('youtube')).toEqual(['YouTube Notifications (Soon)', 'YouTube Moderation (Soon)']);
-    expect(inGroup('planned').every((l) => l.endsWith('(Soon)'))).toBe(true);
+    expect(inGroup('twitch')).toEqual(['Twitch Notifications', 'Twitch Moderation (Soon)']);
+    // YouTube is only its heading (Soon) until it is built; OBS Overlays stands alone.
+    expect(inGroup('youtube')).toEqual([]);
+    expect(SECTION_GROUPS.find((g) => g.id === 'youtube')?.soon).toBe(true);
+    expect(inGroup('planned')).toEqual(['OBS Overlays (Soon)']);
     // No duplicates, and the retired workflow builder is gone.
     const ids = SECTIONS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -138,25 +138,27 @@ describe('navigation', () => {
     const html = renderToStaticMarkup(<App />);
     const t = text(html);
     expect(t).toMatch(
-      /Overview Dashboard Commands Giveaways Timed Messages Discord Discord Bot Sticky Messages Embed Creator Loyalty &(?:amp;)? Rewards Kick Kick Moderation Kick Notifications Clips Twitch Soon Twitch Notifications Soon Twitch Moderation Soon YouTube Soon YouTube Notifications Soon YouTube Moderation Soon Coming later Soon OBS Overlays Soon/,
+      /^\s*CONDUIT Dashboard Commands Giveaways Timed Messages Discord Discord Bot Sticky Messages Embed Creator Loyalty &(?:amp;)? Rewards Kick Kick Moderation Kick Notifications Clips Twitch Twitch Notifications Twitch Moderation Soon YouTube Soon OBS Overlays Soon Settings Made by Retronix/,
     );
-    // Groups fold: those with only planned (Soon) sections start folded (still in the page, hidden); the rest are open.
-    for (const g of ['twitch', 'youtube', 'planned']) {
-      expect(html).toMatch(new RegExp(`aria-expanded="false" aria-controls="nav-group-${g}"`));
-      expect(html).toMatch(new RegExp(`id="nav-group-${g}" class="nav-group-items" hidden=""`));
-    }
-    for (const g of ['overview', 'discord', 'kick']) expect(html).toMatch(new RegExp(`aria-expanded="true" aria-controls="nav-group-${g}"`));
+    for (const g of ['discord', 'kick', 'twitch']) expect(html).toMatch(new RegExp(`aria-expanded="true" aria-controls="nav-group-${g}"`));
     for (const p of ['discord', 'kick', 'twitch', 'youtube']) expect(html).toContain(`nav-platform nav-platform-${p}`);
     // Soon entries are plain text (no button), marked disabled, with the gray Soon label.
-    expect(html).toMatch(/<span class="nav-item nav-soon" aria-disabled="true" title="Coming soon">.*?Twitch Notifications.*?<span class="nav-phase">Soon<\/span><\/span>/);
-    expect(html).not.toMatch(/<button[^>]*>(?:(?!<\/button>).)*Twitch Notifications/);
-    expect(t).toContain('Connect and manage your platform accounts.');
+    expect(html).toMatch(/<span class="nav-item nav-soon" aria-disabled="true" title="Coming soon">.*?Twitch Moderation.*?<span class="nav-phase">Soon<\/span><\/span>/);
+    expect(html).toMatch(/<span class="nav-item nav-soon" aria-disabled="true" title="Coming soon">.*?OBS Overlays.*?<span class="nav-phase">Soon<\/span><\/span>/);
+    expect(html).toMatch(/<span class="nav-group-label nav-group-soon[^"]*" aria-disabled="true" title="Coming soon"><span class="nav-group-name">YouTube<\/span><span class="nav-phase">Soon<\/span><\/span>/);
+    expect(html).not.toMatch(/<button[^>]*>(?:(?!<\/button>).)*(?:Twitch Moderation|YouTube|OBS Overlays)/);
   });
 
-  it('Settings is pinned in the sidebar footer next to the version, and opens', async () => {
+  it('the page header is only the title: no summary, and no backend pill while it runs', async () => {
+    const { App } = await import('../App');
+    const html = renderToStaticMarkup(<App />);
+    expect(html).toMatch(/<header class="topbar"><h1>Dashboard<\/h1>(?:<span class="pill[^"]*"[^>]*>[^<]*<\/span>)?<div class="page-actions"><\/div><\/header>/);
+    expect(html).not.toContain('topbar-summary');
+  });
+
+  it('Settings is pinned in the sidebar footer next to the credit, and opens', async () => {
     const { SECTIONS } = await import('../sections');
-    expect(SECTIONS.filter((s) => s.group === 'footer').map((s) => [s.id, s.label, s.phase])).toEqual([['settings', 'Settings', null]]);
-    expect(SECTIONS.filter((s) => s.group === 'planned').map((s) => s.label)).toEqual(['OBS Overlays']);
+    expect(SECTIONS.filter((s) => s.group === 'footer').map((s) => [s.id, s.label, s.soon])).toEqual([['settings', 'Settings', undefined]]);
     const { App } = await import('../App');
     const html = renderToStaticMarkup(<App />);
     const nav = html.slice(html.indexOf('<nav'), html.indexOf('</nav>'));
@@ -164,27 +166,16 @@ describe('navigation', () => {
     const footer = html.slice(html.indexOf('<div class="sidebar-footer">'), html.indexOf('</aside>'));
     expect(footer).toMatch(/^<div class="sidebar-footer"><button type="button" class="nav-item"><svg[^]*?<\/svg><span class="nav-label">Settings<\/span><\/button>/);
     expect(footer).not.toContain('nav-soon');
-    expect(text(footer)).toContain('built by Retronix');
+    expect(text(footer)).toContain('Made by Retronix');
   });
 
-  it('brand: the CONDUIT logo and tagline', async () => {
+  it('brand: the CONDUIT logo and name, no tagline', async () => {
     const { App } = await import('../App');
     const html = renderToStaticMarkup(<App />);
     expect(html).toMatch(/<img class="brand-mark" src="[^"]*logo[^"]*\.png"/);
     expect(html).not.toContain('crown');
-    expect(text(html)).toContain('CONDUIT The Link Between Everything.');
-  });
-
-
-  it('the planned page (if reached) shows a gray Soon badge and no controls', async () => {
-    const { SECTIONS } = await import('../sections');
-    const { PlannedPage } = await import('../pages/app/PlannedPage');
-    for (const id of ['youtube-moderation', 'twitch-notifications']) {
-      const html = renderToStaticMarkup(<PlannedPage section={SECTIONS.find((s) => s.id === id)!} />);
-      expect(html).toContain('class="badge badge-soon"');
-      expect(text(html)).toMatch(/no permissions are requested/);
-      expect(html).not.toMatch(/<button|<input|<select|<table/);
-    }
+    expect(text(html)).toMatch(/^\s*CONDUIT Dashboard/);
+    expect(text(html)).not.toContain('The Link Between Everything');
   });
 });
 
@@ -221,10 +212,8 @@ describe('Kick Moderation page', () => {
 
     const automod = { ...kick().automod, kickActions: { log: yes, timeout: yes, delete_message: no('Your main Kick account hasn’t granted “moderation:chat_message:manage”.') } };
     const { html, t } = await renderKick(kick({ automod }));
-    // Like Discord Bot → Protection: a row per check with what it does, its status, a switch and Configure.
-    expect(t).toMatch(
-      /Blocked words and phrases Messages with words, phrases or patterns from your list\. Off Configure Links Links, except to sites you allow\. Off Configure Spam checks Caps, emote and symbol spam, long messages, repeats and flooding\. Off Configure Raid mode When many first-time chatters arrive at once, CONDUIT is stricter with them for a few minutes\. Off Configure Ignored users People the checks skip\. You and the chatbot are always skipped\. Moderators Configure/,
-    );
+    // Like Discord Bot → Protection: a row per check with its status, a switch and Configure.
+    expect(t).toMatch(/Blocked words and phrases Off Configure Links Off Configure Spam checks Off Configure Raid mode Off Configure Ignored users Moderators Configure/);
     for (const r of ['Blocked words and phrases', 'Links', 'Raid mode']) expect(html).toContain(`aria-label="${r} `);
     // The spam checks are one row (no switch of its own; each check has one in its table).
     expect(html).not.toContain('aria-label="Spam checks');
@@ -252,7 +241,7 @@ describe('Kick Moderation page', () => {
     expect(ignored).toMatch(/Ignored users .* Close Kick usernames, one per line Ignore moderators Save/);
   });
 
-  it('raid mode: its row says whether it’s learning, watching or on; its panel explains what Kick doesn’t allow and can start it now', async () => {
+  it('raid mode: its row says whether it’s learning, watching or on; its panel can start it now', async () => {
     const { raidSummary, AutomodCard } = await import('../pages/community/ModerationPage');
     const s = { ...structuredClone(AUTOMOD_DEFAULTS), enabled: true, raid: { ...AUTOMOD_DEFAULTS.raid, enabled: true } };
     expect(raidSummary(AUTOMOD_DEFAULTS, { activeUntil: null, learning: false, knownChatters: 0 }).text).toBe('Off');
@@ -261,17 +250,16 @@ describe('Kick Moderation page', () => {
     expect(raidSummary(s, { activeUntil: '2026-10-11T18:05:00.000Z', learning: false, knownChatters: 90 }).text).toMatch(/^On until /);
     const automod = { ...kick().automod, kick: s };
     const t = text(renderToStaticMarkup(<AutomodCard automod={automod} kickConnected initialOpen="raid" />));
-    expect(t).toMatch(/Raid mode .* Learning your regulars Close Starts when people chat for the first time within seconds, and lasts minutes/);
-    expect(t).toContain('Kick doesn’t let apps change its chat modes (like slow or followers-only), so CONDUIT doesn’t.');
-    expect(t).toContain('(3 chatters so far)');
+    expect(t).toMatch(/Raid mode .*Learning your regulars Close Starts when people chat for the first time within seconds, and lasts minutes/);
+    expect(t).toContain('Learning your regulars (3 chatters so far)');
     expect(t).toMatch(/Then Delete the message Timeout the user.* The chatbot says, when raid mode starts/);
     expect(t).toContain('Start raid mode now');
   });
 
-  it('blocked words: words with wildcards, patterns and allowed words; links: allowed sites', async () => {
+  it('blocked words: words (with * wildcards), patterns and allowed words; links: allowed sites', async () => {
     const { AutomodCard } = await import('../pages/community/ModerationPage');
     const words = text(renderToStaticMarkup(<AutomodCard automod={kick().automod} kickConnected initialOpen="blockedTerms" />));
-    expect(words).toMatch(/Words and phrases, one per line \(\* as a wildcard\) Regular expressions, one per line \(up to 10\) .* cat\* words starting with it,.* Allowed words/);
+    expect(words).toMatch(/Words and phrases, one per line \(\* as a wildcard\) Regular expressions, one per line \(up to 10\) .*Allowed words/);
     const links = text(renderToStaticMarkup(<AutomodCard automod={kick().automod} kickConnected initialOpen="links" />));
     expect(links).toMatch(/Allowed sites, one per line \(their subdomains too\) kick\.com/);
   });
@@ -285,7 +273,6 @@ describe('Kick Moderation page', () => {
     );
     expect(t).toMatch(/Ban raider On Kick by ModAlice/);
     expect(html).toContain('<button type="button" class="link-button">raider</button>');
-    expect(t).toContain('Select a name to see everything for that person.');
     expect(t).toContain('Kick didn’t accept the ban and timeout subscription');
   });
 
@@ -326,12 +313,11 @@ describe('Discord Moderation page', () => {
     expect(t).toMatch(/Timeout · 10 min Spam fan \/timeout by retrofan Retro Server/);
   });
 
-  it('lists the moderation commands and which permission the bot still needs', async () => {
+  it('says which permission the bot still needs for the moderation commands, and nothing when it has them', async () => {
     const { t } = await renderDiscord(discord());
-    expect(t).toMatch(/Commands: \/timeout ?, \/untimeout ?, \/kick ?, \/ban ?, \/unban/);
     expect(t).toContain('In Retro Server the bot still needs Kick Members and Ban Members (Server Settings → Roles).');
     const all = await renderDiscord(discord({ commands: discord().commands.map((c) => ({ ...c, missingIn: [] })) }));
-    expect(all.t).toContain('In Retro Server the bot has the permissions it needs.');
+    expect(all.t).not.toMatch(/the bot (still needs|has the permissions)/);
     const off = await renderDiscord(discord({ connected: false, problem: 'Set up your Discord bot first (Dashboard → Discord → Connect).', guilds: [] }));
     expect(off.t).not.toContain('Set up your Discord bot first'); // account status: Dashboard only
   });
@@ -476,7 +462,6 @@ describe('Moderation log: Discord Logging entries', () => {
     const s = discord({ loggingHistory: [entry({}), entry({ at: '2026-10-20T11:00:00Z', category: 'members', title: 'Member joined', posted: false, detail: null })] });
     const t = text(renderToStaticMarkup(<DiscordCommandLog s={s} />));
     expect(t).toMatch(/Messages log troll Message deleted Retro Server In #general · Text unavailable .* Members log troll Member joined Not posted Retro Server/);
-    expect(t).toContain('moderation (including Discord’s own and other bots’), Discord Logging, and Loyalty');
   });
 });
 
@@ -494,7 +479,6 @@ describe('Moderation log: Loyalty & Rewards', () => {
     expect(t).toMatch(/Points adjusted member 123456789012345678 \+2 points · balance 2 test/);
     expect(t).toMatch(/XP adjusted 901 −20 XP · level 3 Retro Server spam/);
     expect(t).toMatch(/Loyalty settings saved — Retro Server enabled: true/);
-    expect(t).toContain('and Loyalty &amp; Rewards');
   });
 });
 

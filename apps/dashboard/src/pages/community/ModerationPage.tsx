@@ -150,14 +150,13 @@ export function KickModerationView({ s, onChanged }: { s: KickModerationState; o
       <AutomodCard key={JSON.stringify(s.automod.kick)} automod={s.automod} kickConnected={s.connected} onSaved={onChanged} />
       {person ? (
         <UserHistory platform="kick" person={person} onBack={() => setPerson(null)}>
-          {(h) => <LogsCard platform="kick" history={h.history} intro={`Everything recorded for ${person.name} in your Kick chat.`} />}
+          {(h) => <LogsCard platform="kick" history={h.history} />}
         </UserHistory>
       ) : (
         <LogsCard
           platform="kick"
           history={s.history}
           onUser={(id, name) => setPerson({ id, name })}
-          intro="What automated protection detected and did in your Kick chat, and bans and timeouts done on Kick itself (by you, your moderators or other bots). Select a name to see everything for that person."
           extra={s.connected && !events.ok && events.problem ? <p className="small text-warn">{events.problem}</p> : undefined}
         />
       )}
@@ -348,11 +347,6 @@ export function DiscordCommandLog({ s, onUser, title }: { s: DiscordModerationSt
   return (
     <section className="card" aria-labelledby="discord-logs">
       <h2 id="discord-logs">{title ?? 'Moderation log'}</h2>
-      <p className="muted small">
-        Everything in your server, newest first: commands, protection, moderation (including Discord’s own and other bots’),
-        Discord Logging, and Loyalty &amp; Rewards. To see moderation done outside CONDUIT, the bot needs the View Audit Log
-        permission.{onUser && ' Click a name to see that member’s history.'}
-      </p>
       <DiscordCommandsNote s={s} />
       {rows.length === 0 ? (
         <p className="empty-note">Nothing logged yet.</p>
@@ -402,29 +396,16 @@ export function DiscordCommandLog({ s, onUser, title }: { s: DiscordModerationSt
 
 /** Which moderation commands exist and whether the bot can carry them out (it needs the permission too). */
 function DiscordCommandsNote({ s }: { s: DiscordModerationState }) {
-  // Whether the bot is connected is shown on the Dashboard only.
+  // Whether the bot is connected is shown on the Dashboard only; here, only a permission the bot still lacks.
   if (!s.connected) return null;
+  const missing = s.guilds
+    .map((g) => ({ g, needs: [...new Set(s.commands.filter((c) => c.missingIn.includes(g.id)).map((c) => c.permission))] }))
+    .filter((x) => x.needs.length > 0);
+  if (missing.length === 0) return null;
   return (
-    <div className="commands-note small">
-      <span className="muted">Commands: </span>
-      {s.commands.map((c, i) => (
-        <span key={c.name}>
-          {i > 0 && ', '}
-          <code>/{c.name}</code>
-        </span>
-      ))}
-      <span className="muted"> — Discord shows each one only to members with its permission. </span>
-      {s.guilds.map((g) => {
-        const missing = [...new Set(s.commands.filter((c) => c.missingIn.includes(g.id)).map((c) => c.permission))];
-        return (
-          <span key={g.id} className={missing.length ? 'text-warn' : 'text-ok'}>
-            {missing.length
-              ? `In ${g.name} the bot still needs ${missing.join(' and ')} (Server Settings → Roles).`
-              : `In ${g.name} the bot has the permissions it needs.`}{' '}
-          </span>
-        );
-      })}
-    </div>
+    <p className="commands-note small text-warn">
+      {missing.map(({ g, needs }) => `In ${g.name} the bot still needs ${needs.join(' and ')} (Server Settings → Roles).`).join(' ')}
+    </p>
   );
 }
 
@@ -434,9 +415,9 @@ type RuleKey = 'blockedTerms' | 'links' | 'caps' | 'emotes' | 'symbols' | 'longM
 /** The six spam-type checks: one row, with a table of them (like Discord's Message checks). */
 type SpamKey = Exclude<RuleKey, 'blockedTerms' | 'links'>;
 export type KickRow = 'blockedTerms' | 'links' | 'spamChecks' | 'raid' | 'ignored';
-const RULES: ReadonlyArray<{ key: 'blockedTerms' | 'links'; label: string; what: string }> = [
-  { key: 'blockedTerms', label: AUTOMOD_RULE_LABEL.blocked_terms, what: 'Messages with words, phrases or patterns from your list.' },
-  { key: 'links', label: AUTOMOD_RULE_LABEL.links, what: 'Links, except to sites you allow.' },
+const RULES: ReadonlyArray<{ key: 'blockedTerms' | 'links'; label: string }> = [
+  { key: 'blockedTerms', label: AUTOMOD_RULE_LABEL.blocked_terms },
+  { key: 'links', label: AUTOMOD_RULE_LABEL.links },
 ];
 const SPAM_CHECKS: ReadonlyArray<{ key: SpamKey; label: string }> = [
   { key: 'caps', label: AUTOMOD_RULE_LABEL.caps },
@@ -529,7 +510,7 @@ export function AutomodCard({
     .join(' · ');
   const raid = raidSummary(saved, automod.raid);
   const toggle = (row: KickRow) => setOpen(open === row ? null : row);
-  const row = (key: KickRow, label: string, what: string, status: { text: string; tone: keyof typeof TONE_PILL }, on: boolean | null, onSwitch: (on: boolean) => void, panel: React.ReactNode) => (
+  const row = (key: KickRow, label: string, status: { text: string; tone: keyof typeof TONE_PILL }, on: boolean | null, onSwitch: (on: boolean) => void, panel: React.ReactNode) => (
     <li key={key} className={`protection-row${open === key ? ' is-open' : ''}`}>
       <div className="protection-row-head">
         <span className="protection-switch">
@@ -541,7 +522,6 @@ export function AutomodCard({
         </span>
         <div className="protection-row-text">
           <strong>{label}</strong>
-          <span className="muted small">{what}</span>
         </div>
         <span className={`pill ${TONE_PILL[status.tone]}`}>{status.text}</span>
         <Button variant="secondary" className="btn-row" aria-expanded={open === key} onClick={() => toggle(key)}>
@@ -554,10 +534,7 @@ export function AutomodCard({
   return (
     <section className="card" aria-labelledby="kick-automod">
       <div className="card-head">
-        <div>
-          <h2 id="kick-automod">Automated Protection</h2>
-          <p className="muted small">Checks each new message in your Kick chat. Off until you switch it on; each check only logs until you choose an action.</p>
-        </div>
+        <h2 id="kick-automod">Automated Protection</h2>
         <label className="switch">
           <input
             type="checkbox"
@@ -575,11 +552,10 @@ export function AutomodCard({
         </p>
       )}
       <ul className={`protection-list${saved.enabled ? '' : ' rules-off'}`}>
-        {RULES.map(({ key, label, what }) =>
+        {RULES.map(({ key, label }) =>
           row(
             key,
             label,
-            what,
             ruleSummary(saved, key),
             saved[key].enabled,
             (on) => void save({ ...saved, [key]: { ...saved[key], enabled: on } }),
@@ -589,7 +565,6 @@ export function AutomodCard({
         {row(
           'spamChecks',
           'Spam checks',
-          'Caps, emote and symbol spam, long messages, repeats and flooding.',
           spamSummary(saved),
           null,
           () => {},
@@ -598,7 +573,6 @@ export function AutomodCard({
         {row(
           'raid',
           AUTOMOD_RULE_LABEL.raid,
-          'When many first-time chatters arrive at once, CONDUIT is stricter with them for a few minutes.',
           raid,
           saved.raid.enabled,
           (on) => void save({ ...saved, raid: { ...saved.raid, enabled: on } }),
@@ -607,7 +581,6 @@ export function AutomodCard({
         {row(
           'ignored',
           'Ignored users',
-          'People the checks skip. You and the chatbot are always skipped.',
           { text: ignoredStatus || 'Nobody else', tone: 'muted' },
           null,
           () => {},
@@ -617,8 +590,8 @@ export function AutomodCard({
       {unavailable.length > 0 && kickConnected && (
         <p className="small text-warn">{unavailable.map((a) => `${AUTOMOD_ACTION_LABEL[a]}: ${automod.kickActions[a].problem}`).join(' ')}</p>
       )}
-      <p className="muted small">
-        {automod.stats.checked} checked · {automod.stats.matched} matched since CONDUIT started
+      <p className="muted small" title="Since CONDUIT started">
+        {automod.stats.checked} checked · {automod.stats.matched} matched
       </p>
     </section>
   );
@@ -706,17 +679,12 @@ function KickRulePanel({ rule, saved, automod, onSaved }: { rule: 'blockedTerms'
             {text('Words and phrases, one per line (* as a wildcard)', terms, setTerms)}
             {text('Regular expressions, one per line (up to 10)', patterns, setPatterns)}
           </div>
-          <p className="muted small">
-            <code>cat</code> matches the word “cat”; <code>cat*</code> words starting with it, <code>*cat</code> words ending with it, <code>*cat*</code> anywhere.
-            Capital letters and fancy fonts don’t matter.
-          </p>
           {text('Allowed words (never matched; one per line)', allowed, setAllowed, 2)}
         </>
       )}
       {rule === 'links' && (
         <>
           {text('Allowed sites, one per line (their subdomains too)', sites, setSites, 3)}
-          <p className="muted small">Any other link counts: with http(s)://, www., or a site like example.com.</p>
         </>
       )}
       <ActionFields
@@ -879,19 +847,15 @@ function KickRaidPanel({ saved, automod, onSaved }: { saved: AutomodSettings; au
   return (
     <div className="protection-panel">
       <div className="rule-inline">
-        <span className="muted small">Starts when</span>
+        <span>Starts when</span>
         {num('First-time chatters', draft.newChatters, 3, 200, (newChatters) => set({ newChatters }))}
-        <span className="muted small">people chat for the first time within</span>
+        <span>people chat for the first time within</span>
         {num('Seconds', draft.windowSeconds, 10, 600, (windowSeconds) => set({ windowSeconds }))}
-        <span className="muted small">seconds, and lasts</span>
+        <span>seconds, and lasts</span>
         {num('Minutes', draft.durationMinutes, 1, 60, (durationMinutes) => set({ durationMinutes }))}
-        <span className="muted small">minutes</span>
+        <span>minutes</span>
       </div>
-      <p className="muted small">
-        While it’s on, a first-time chatter’s message with a link, or that any check above matches (even one set to Log only), is acted on. Kick doesn’t
-        let apps change its chat modes (like slow or followers-only), so CONDUIT doesn’t.
-        {automod.raid.learning && ` It starts working once CONDUIT has seen enough of your chat to know your regulars (${automod.raid.knownChatters} chatters so far).`}
-      </p>
+      {automod.raid.learning && <p className="muted small">Learning your regulars ({automod.raid.knownChatters} chatters so far)</p>}
       <ActionFields
         action={draft.action}
         timeoutMinutes={draft.timeoutMinutes}
@@ -1005,13 +969,11 @@ function LogDescription({ event, place, platform, result, detail }: { event: str
 export function LogsCard({
   platform,
   history,
-  intro,
   extra,
   onUser,
 }: {
   platform: ModerationPlatform;
   history: ModerationRecordView[];
-  intro: string;
   extra?: React.ReactNode;
   /** Selecting a name shows that person's history. */
   onUser?: (userId: string, name: string) => void;
@@ -1020,7 +982,6 @@ export function LogsCard({
   return (
     <section className="card" aria-labelledby={`${platform}-logs`}>
       <h2 id={`${platform}-logs`}>Logs</h2>
-      <p className="muted small">{intro}</p>
       {extra}
       {history.length === 0 ? (
         <p className="empty-note">Nothing logged yet.</p>

@@ -37,7 +37,7 @@ describe('HTTP API baseline', () => {
     const res = await rawRequest('/api/health');
     expect(res.status).toBe(200);
     const body = healthResponseSchema.parse(JSON.parse(res.body));
-    expect(body).toMatchObject({ status: 'ok', version: '9.9.9-test', database: { ok: true, schemaVersion: 29 } });
+    expect(body).toMatchObject({ status: 'ok', version: '9.9.9-test', database: { ok: true, schemaVersion: 30 } });
     expect(Object.keys(body).sort()).toEqual(['database', 'status', 'time', 'uptimeSeconds', 'version']);
     expect(res.headers['x-powered-by']).toBeUndefined();
     expect(res.headers['x-content-type-options']).toBe('nosniff');

@@ -76,17 +76,12 @@ async function render(s: DiscordProtectionState, open: Open = null) {
 }
 
 describe('Discord Bot → Protection overview', () => {
-  it('one compact list: each feature with what it does, its status, a switch and Configure; no settings until opened', async () => {
+  it('one compact list: each feature with its status, a switch and Configure; no settings until opened', async () => {
     const { html, t } = await render(state());
     expect(sections(html)).toEqual(['Protection']);
     expect(t).not.toMatch(/Runs on Discord|Runs in CONDUIT/);
-    expect(t).toMatch(/AutoMod Your own rules for words, mention spam and member names\. No rules Manage/);
-    expect(t).toContain('Everything runs while CONDUIT is open.');
-    expect(t).toMatch(/Message checks Repeated messages, flooding, caps and invite links\. Off Configure/);
-    expect(t).toMatch(/Anti-nuke Stops mass deleting, banning and rogue bots\. Off Configure/);
-    expect(t).toMatch(/Anti-raid Spots join bursts, can lock the server down, and checks new accounts \(join gate\)\. Off Configure/);
+    expect(t).toMatch(/Protection AutoMod No rules Manage Message checks Off Configure Anti-nuke Off Configure Anti-raid Off Configure Bot bait Off Configure/);
     expect(t).not.toMatch(/Join gate &amp; Verify|Verify button/);
-    expect(t).toMatch(/Bot bait Trap channels: anyone who posts there is treated as a spam bot\. Off Configure/);
     for (const f of ['Message checks', 'Anti-nuke', 'Anti-raid', 'Bot bait']) expect(html).toContain(`aria-label="${f} off"`);
     expect(html).not.toContain('protection-panel');
     expect(html.match(/aria-expanded="false"/g)).toHaveLength(5);
@@ -119,7 +114,8 @@ describe('Discord Bot → Protection overview', () => {
     const { html, t } = await render(state(), 'antinuke');
     expect(html.match(/protection-panel/g)).toHaveLength(1);
     expect(html).toContain('aria-expanded="true"');
-    expect(t).toMatch(/Anti-nuke .* Close Never acts on the server owner/);
+    expect(t).toMatch(/Anti-nuke .* Close/);
+    expect(t).not.toContain('Never acts on the server owner');
     expect(t).not.toContain('Repeated messages Message flooding');
   });
 
@@ -135,8 +131,6 @@ describe('AutoMod panel (CONDUIT’s own rules)', () => {
       state({ automod: { guilds: [guild({ rules: [rule(), rule({ id: '00000000-0000-0000-0000-0000000000a2', name: 'Pings', trigger: 'mention_spam', keywords: [], mentionLimit: 5, action: 'delete_message', alertChannelId: null, enabled: false })] })], problem: null } }),
       'automod',
     );
-    expect(t).toContain('CONDUIT’s own rules, checked while CONDUIT is open.');
-    expect(t).toContain('Discord’s built-in AutoMod isn’t changed.');
     expect(t).toMatch(/No invites Exempt: 1 role Custom words Delete and time out 10 min · Alert #mod-alerts Edit Delete/);
     expect(t).toMatch(/Pings Exempt: 1 role Mention spam Delete the message Edit Delete/);
     expect(html).toContain('aria-label="No invites on"');
@@ -162,7 +156,7 @@ describe('AutoMod panel (CONDUIT’s own rules)', () => {
   it('the editor: words, wildcards and allowed words; what it does; alert; exemptions (member names: no channels or moderators)', async () => {
     const { AutomodRuleEditor } = await import('../pages/discord/DiscordProtection');
     const words = text(renderToStaticMarkup(<AutomodRuleEditor g={guild()} rule={null} trigger="keyword" onClose={() => {}} onSaved={() => {}} />));
-    expect(words).toMatch(/New rule · Custom words .* Words and phrases .* Regular expressions .* cat\* words starting with it,.* Allowed words .* When it matches .* Send an alert to .* Don’t check moderators .* Exempt roles .* Exempt channels/);
+    expect(words).toMatch(/New rule · Custom words .* Words and phrases .* Regular expressions .* Allowed words .* When it matches .* Send an alert to .* Don’t check moderators .* Exempt roles .* Exempt channels/);
     const names = renderToStaticMarkup(<AutomodRuleEditor g={guild()} rule={null} trigger="member_profile" onClose={() => {}} onSaved={() => {}} />);
     expect(names).toMatch(/<option value="log" selected="">Log only<\/option><option value="timeout">Time out<\/option><option value="kick">Kick<\/option>/);
     expect(text(names)).not.toMatch(/Exempt channels|Don’t check moderators/);
@@ -194,7 +188,7 @@ describe('Message checks panel', () => {
     s.messageChecks.enabled = true;
     const { t } = await render(s, 'messages');
     expect(t).toContain('caps and invite checks can’t run');
-    expect(t).toContain('Every check is on “Log only”');
+    expect(t).toContain('Every check is on Log only.');
   });
 });
 
@@ -255,14 +249,13 @@ describe('Anti-raid panel', () => {
     expect(html).not.toContain('<strong>Watch for join bursts</strong>');
     expect(html).toContain('<option value="alert" selected="">Alert only (dry run)</option>');
     expect(html).toContain('<option value="high" selected="">High (member 10+ minutes)</option>');
-    expect(t).toMatch(/Lockdown by hand .* Retro Server Normal Preview Lock down now/);
+    expect(t).toMatch(/Lockdown by hand .*Retro Server Normal Preview Lock down now/);
   });
 
   it('the join gate is part of it; Hold works through Verify buttons (Embed Creator)', async () => {
     const { html, t } = await render(state(), 'antiraid');
     expect(t).toMatch(/Join gate Check new accounts \(only new joins\) Flag accounts younger than ?.*days or without a profile picture Flagged members/);
     expect(html).toContain('<option value="hold">Hold: Verify buttons won’t let them in</option>');
-    expect(t).toContain('“Hold” works with buttons that use the Verify action (Discord → Embed Creator → Buttons &amp; Menus).');
     expect(t).not.toMatch(/Post the Verify button|Save join gate/);
   });
 

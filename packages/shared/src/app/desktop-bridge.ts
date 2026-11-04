@@ -19,6 +19,7 @@ export const IPC_CHANNELS = {
   discordOpenPortal: 'conduit:discord:open-portal',
   kickOpenDeveloperSettings: 'conduit:kick:open-developer-settings',
   kickOpenClip: 'conduit:kick:open-clip',
+  twitchOpenDeveloperConsole: 'conduit:twitch:open-developer-console',
   filesOpenLogsFolder: 'conduit:files:open-logs-folder',
   filesOpenBackupsFolder: 'conduit:files:open-backups-folder',
   filesOpenClipsFolder: 'conduit:files:open-clips-folder',
@@ -85,6 +86,11 @@ export interface ConduitBridge {
     openDeveloperSettings(): Promise<ApiResult<{ opened: true }>>;
     /** Opens a clip's page on kick.com in the browser (only kick.com clip addresses are accepted). */
     openClip?(url: string): Promise<ApiResult<{ opened: true }>>;
+  };
+
+  twitch?: {
+    /** Opens the Twitch Developer Console (where the user creates their own Twitch app) in the browser. Fixed URL. */
+    openDeveloperConsole(): Promise<ApiResult<{ opened: true }>>;
   };
 
   discord: {

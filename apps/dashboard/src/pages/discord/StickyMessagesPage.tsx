@@ -5,6 +5,7 @@ import { api, ApiClientError, errorMessage } from '../../api';
 import { DiscordChannelPicker, useDiscordChannels } from '../../components/discord/DiscordChannelPicker';
 import { EmbedEditor, EmbedPreview } from '../../components/discord/EmbedEditor';
 import { Button, Loading } from '../../components/forms';
+import { PageActions } from '../../components/PageActions';
 import { useAsync, useBackendStatus, usePolling } from '../../hooks';
 
 const POLL_MS = 5000;
@@ -29,14 +30,12 @@ export function StickyMessagesView({ s, onChanged }: { s: StickyMessagesState; o
   const [editing, setEditing] = useState<Editing>(null);
   return (
     <div className="stack">
-      <section className="card" aria-labelledby="sticky-title">
-        <div className="card-head">
-          <div>
-            <h2 id="sticky-title">Your stickies</h2>
-            <p className="muted small">When people post, each one moves back to the bottom: the bot posts a fresh copy and deletes the old one.</p>
-          </div>
-          {!editing && <Button onClick={() => setEditing({ mode: 'new' })}>New sticky</Button>}
-        </div>
+      {!editing && (
+        <PageActions>
+          <Button onClick={() => setEditing({ mode: 'new' })}>New sticky</Button>
+        </PageActions>
+      )}
+      <section className="card" aria-label="Sticky messages">
         {s.stickies.length === 0 && !editing ? (
           <p className="empty-note">No sticky messages yet.</p>
         ) : (
@@ -89,12 +88,8 @@ function StickyRow({ x, onEdit, onChanged }: { x: StickyMessageView; onEdit: () 
           <strong>{x.name}</strong>
           <span className="muted small">in {x.destination ?? 'an unknown channel'}</span>
         </div>
-        <div className="small">
-          Moves to the bottom after {x.messagesBeforeRepost === 1 ? 'each message' : `${x.messagesBeforeRepost} messages`} from people, at most every {x.cooldownSeconds} s
-        </div>
         <div className="muted small item-preview">{x.message.content || (x.message.embed ? `Embed: ${x.message.embed.title || 'untitled'}` : '')}</div>
         {x.problem && <span className="small text-warn">{x.problem}</span>}
-        {x.recent[0] && <span className="muted small">Last: {x.recent[0].detail} ({new Date(x.recent[0].at).toLocaleTimeString()})</span>}
         {error && (
           <span className="small text-bad" role="alert">
             {error}
@@ -102,7 +97,9 @@ function StickyRow({ x, onEdit, onChanged }: { x: StickyMessageView; onEdit: () 
         )}
       </div>
       <div className="item-side">
-        <span className={`pill ${status.pill}`}>{status.label}</span>
+        <span className={`pill ${status.pill}`} title={x.recent[0] ? `${new Date(x.recent[0].at).toLocaleString()} — ${x.recent[0].detail}` : undefined}>
+          {status.label}
+        </span>
         <Button variant="ghost" className="btn btn-ghost btn-small" onClick={onEdit}>
           Edit
         </Button>
@@ -176,7 +173,7 @@ function StickyEditor({ initial, onClose, onSaved }: { initial: StickyMessageVie
         />
       </div>
       <label className="field">
-        <span className="field-label">Message text (optional with an embed; Discord markdown works)</span>
+        <span className="field-label">Message</span>
         <textarea rows={2} value={content} maxLength={2000} onChange={(e) => setContent(e.target.value)} />
         {(errors['message.content'] || errors.message) && <span className="field-error">{errors['message.content'] ?? errors.message}</span>}
       </label>
@@ -187,18 +184,17 @@ function StickyEditor({ initial, onClose, onSaved }: { initial: StickyMessageVie
       <fieldset className="editor-block">
         <legend>Repost</legend>
         <div className="editor-row">
-          <span className="muted small">After</span>
+          <span>After</span>
           <input aria-label="Messages before repost" className="num" type="number" min={1} max={100} value={every} onChange={(e) => setEvery(Number(e.target.value))} />
-          <span className="muted small">message(s) from people, at most once every</span>
+          <span>{every === 1 ? 'message' : 'messages'}, at most every</span>
           <input aria-label="Cooldown seconds" className="num" type="number" min={5} max={3600} value={cooldown} onChange={(e) => setCooldown(Number(e.target.value))} />
-          <span className="muted small">seconds</span>
+          <span>seconds</span>
         </div>
-        <p className="muted small">Several messages in a row cause one repost. Nothing is reposted while the sticky is still the newest message.</p>
         {(errors.cooldownSeconds || errors.messagesBeforeRepost) && <span className="field-error">{errors.cooldownSeconds ?? errors.messagesBeforeRepost}</span>}
       </fieldset>
       <div className="card-foot">
         <label className="inline-check">
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> On (posts it now)
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} /> On
         </label>
         {failure && (
           <span className="small text-bad" role="alert">

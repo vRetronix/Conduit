@@ -1,27 +1,20 @@
 import type { BackendStatus } from '@conduit/shared/app/desktop-bridge';
 
-const LABELS: Record<BackendStatus['state'], string> = {
+const LABELS: Record<Exclude<BackendStatus['state'], 'running'>, string> = {
   starting: 'Backend starting',
-  running: 'Backend running',
   restarting: 'Backend restarting',
   stopping: 'Backend stopping',
   stopped: 'Backend stopped',
   failed: 'Backend failed',
 };
 
-const TONES: Record<BackendStatus['state'], 'ok' | 'warn' | 'bad'> = {
-  starting: 'warn',
-  running: 'ok',
-  restarting: 'warn',
-  stopping: 'warn',
-  stopped: 'bad',
-  failed: 'bad',
-};
-
+/** Shown only while the backend isn't running; when everything works there is nothing to say. */
 export function StatusPill({ status }: { status: BackendStatus | null }) {
+  if (status?.state === 'running') return null;
   if (!status) return <span className="pill pill-warn">Backend unknown</span>;
+  const bad = status.state === 'stopped' || status.state === 'failed';
   return (
-    <span className={`pill pill-${TONES[status.state]}`} role="status">
+    <span className={`pill ${bad ? 'pill-bad' : 'pill-warn'}`} role="status">
       {LABELS[status.state]}
     </span>
   );

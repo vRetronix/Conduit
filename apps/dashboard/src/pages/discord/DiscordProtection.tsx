@@ -37,7 +37,6 @@ import {
   matchingAntinukePreset,
   AUTOMOD_ACTIONS_ALLOWED,
   AUTOMOD_RULES_MAX,
-  AUTOMOD_TRIGGER_HELP,
   AUTOMOD_TRIGGER_LABEL,
   AUTOMOD_TRIGGERS,
   automodActionLabel,
@@ -117,39 +116,34 @@ export function DiscordProtectionView({ s, onChanged, initialOpen }: { s: Discor
       if (f === 'antiraid') return api('POST', '/api/discord/protection/antiraid', { ...s.antiraid, enabled: on });
       return api('POST', '/api/discord/protection/botbait', { ...s.botbait, enabled: on });
     });
-  const rows: Array<{ f: Feature; title: string; what: string; on: boolean | null; panel: ReactNode }> = [
+  const rows: Array<{ f: Feature; title: string; on: boolean | null; panel: ReactNode }> = [
     {
       f: 'automod',
       title: 'AutoMod',
-      what: 'Your own rules for words, mention spam and member names.',
       on: null,
       panel: <DiscordAutomodSection s={s} onChanged={onChanged} />,
     },
     {
       f: 'messages',
       title: 'Message checks',
-      what: 'Repeated messages, flooding, caps and invite links.',
       on: s.messageChecks.enabled,
       panel: <MessageChecksSection key={JSON.stringify(s.messageChecks)} s={s} onSaved={onChanged} />,
     },
     {
       f: 'antinuke',
       title: 'Anti-nuke',
-      what: 'Stops mass deleting, banning and rogue bots.',
       on: s.antinuke.enabled,
       panel: <AntiNukeSection key={JSON.stringify(s.antinuke)} s={s} onSaved={onChanged} />,
     },
     {
       f: 'antiraid',
       title: 'Anti-raid',
-      what: 'Spots join bursts, can lock the server down, and checks new accounts (join gate).',
       on: s.antiraid.enabled,
       panel: <AntiRaidSection key={JSON.stringify(s.antiraid)} s={s} onSaved={onChanged} />,
     },
     {
       f: 'botbait',
       title: 'Bot bait',
-      what: 'Trap channels: anyone who posts there is treated as a spam bot.',
       on: s.botbait.enabled,
       panel: <BotBaitSection key={JSON.stringify(s.botbait)} s={s} onSaved={onChanged} />,
     },
@@ -160,7 +154,6 @@ export function DiscordProtectionView({ s, onChanged, initialOpen }: { s: Discor
       <QuarantineSection s={s} onChanged={onChanged} />
       <section className="card" aria-labelledby="protection-overview">
         <h2 id="protection-overview">Protection</h2>
-        <p className="muted small">Everything runs while CONDUIT is open. All activity is in the Logs tab.</p>
         <ErrorBanner error={error} />
         <ul className="protection-list">
           {rows.map((r) => (
@@ -175,7 +168,6 @@ export function DiscordProtectionView({ s, onChanged, initialOpen }: { s: Discor
                 </span>
                 <div className="protection-row-text">
                   <strong>{r.title}</strong>
-                  <span className="muted small">{r.what}</span>
                 </div>
                 <span className={`pill ${status[r.f].pill}`}>{status[r.f].label}</span>
                 <Button variant="secondary" className="btn-row" aria-expanded={open === r.f} onClick={() => toggleOpen(r.f)}>
@@ -262,10 +254,6 @@ function DiscordAutomodSection({ s, onChanged }: { s: DiscordProtectionState; on
   const guilds = s.automod.guilds;
   return (
     <div className="protection-panel">
-      <p className="muted small">
-        CONDUIT’s own rules, checked while CONDUIT is open. Bot needs: Manage Messages to delete, Timeout Members or Kick Members to punish. Discord’s
-        built-in AutoMod isn’t changed.
-      </p>
       {!s.messageContent && (
         <p className="small text-warn">Custom words need the Message Content intent (Developer Portal → Bot). Mention spam and member names work without it.</p>
       )}
@@ -386,7 +374,7 @@ function AutomodGuild({ g, showName, onChanged }: { g: DiscordAutomodGuild; show
           <Button variant="secondary" disabled={full} onClick={() => setEditing({ rule: null, trigger: newTrigger })}>
             New rule
           </Button>
-          <span className="muted small">{full ? `A server can have up to ${AUTOMOD_RULES_MAX} rules.` : AUTOMOD_TRIGGER_HELP[newTrigger]}</span>
+          {full && <span className="muted small">{`A server can have up to ${AUTOMOD_RULES_MAX} rules.`}</span>}
         </div>
       )}
       {editing && (
@@ -467,7 +455,6 @@ export function AutomodRuleEditor({
       <h3>
         {rule ? 'Edit rule' : 'New rule'} · {AUTOMOD_TRIGGER_LABEL[trigger]}
       </h3>
-      <p className="muted small">{AUTOMOD_TRIGGER_HELP[trigger]}</p>
       <div className="form-grid">
         <Field label="Rule name" value={name} onChange={setName} maxLength={100} error={p.name} />
         {trigger === 'mention_spam' && (
@@ -488,10 +475,6 @@ export function AutomodRuleEditor({
             <TextList label="Words and phrases (one per line; * as a wildcard)" value={keywords} onChange={setKeywords} error={p.keywords} />
             <TextList label="Regular expressions (one per line, up to 10)" value={regex} onChange={setRegex} error={p.regexPatterns} />
           </div>
-          <p className="muted small">
-            <code>cat</code> matches the word “cat”; <code>cat*</code> words starting with it, <code>*cat</code> words ending with it, <code>*cat*</code> anywhere.
-            Capital letters and fancy fonts don’t matter.
-          </p>
           <TextList label="Allowed words (never matched; one per line)" value={allowList} onChange={setAllowList} error={p.allowList} />
         </>
       )}
@@ -653,10 +636,9 @@ export function MessageChecksSection({ s, onSaved }: { s: DiscordProtectionState
   const anyAction = (['repeat', 'flood', 'caps', 'invites'] as const).some((c) => v[c].enabled && v[c].action !== 'log');
   return (
     <div className="protection-panel">
-      <p className="muted small">Bot needs: Manage Messages to delete, Timeout Members to time out. Message text is checked in memory, never stored.</p>
       {s.stats.checked > 0 && (
-        <p className="muted small">
-          Since {new Date(s.stats.since).toLocaleString()}: {s.stats.checked} message{s.stats.checked === 1 ? '' : 's'} checked, {s.stats.matched} matched.
+        <p className="muted small" title={`Since ${new Date(s.stats.since).toLocaleString()}`}>
+          {s.stats.checked} checked · {s.stats.matched} matched
         </p>
       )}
       {v.enabled && !s.messageContent && (
@@ -736,7 +718,7 @@ export function MessageChecksSection({ s, onSaved }: { s: DiscordProtectionState
           </tbody>
         </table>
       </div>
-      {v.enabled && !anyAction && <p className="muted small">Every check is on “Log only”: matches are recorded in Logs and nothing is deleted.</p>}
+      {v.enabled && !anyAction && <p className="small text-warn">Every check is on Log only.</p>}
       <ErrorBanner error={error} />
       <div className="form-actions">
         <Button busy={busy} disabled={!dirty || Object.keys(p).length > 0} onClick={() => void run(() => api('POST', '/api/discord/protection/messages', v))}>
@@ -772,10 +754,6 @@ export function AntiNukeSection({ s, onSaved }: { s: DiscordProtectionState; onS
   const alertValue = v.alertChannel ? `${v.alertChannel.guildId}:${v.alertChannel.channelId}` : '';
   return (
     <div className="protection-panel">
-      <p className="muted small">
-        Never acts on the server owner, CONDUIT’s bot, or trusted people and roles. Bot needs: View Audit Log, plus Manage Roles to quarantine (or Timeout,
-        Kick or Ban Members).
-      </p>
       {next.enabled && next.mode === 'enforce' && next.trustedUsers.length === 0 && next.trustedRoles.length === 0 && (
         <p className="small text-warn">Enforcing with no trusted people or roles: any admin or bot that trips a rule is acted on (the server owner never is).</p>
       )}
@@ -922,9 +900,6 @@ export function QuarantineSection({ s, onChanged, variant = 'card' }: { s: Disco
   if (list.length === 0) return null;
   return (
     <Frame variant={variant} id="conduit-quarantine" title={variant === 'card' ? 'Quarantined members' : 'Quarantine history'}>
-      <p className="muted small">
-        <strong>Restore</strong> gives back the roles CONDUIT removed; <strong>Release</strong> closes the entry without giving them back.
-      </p>
       <ErrorBanner error={error} />
       <div className="table-scroll">
         <table className="table history-table">
@@ -987,10 +962,6 @@ export function AntiRaidSection({ s, onSaved }: { s: DiscordProtectionState; onS
   const setGate = (patch: Partial<AntiraidSettings['gate']>) => setV({ ...v, gate: { ...v.gate, ...patch } });
   return (
     <div className="protection-panel">
-      <p className="muted small">
-        Lifting a lockdown puts back exactly what was there before. Bot needs: Manage Server (verification level), Manage Roles (locking channels), Kick
-        Members (join gate kicks).
-      </p>
       {(v.enabled || v.gate.enabled) && !v.alertChannel && <p className="small text-warn">No alert channel: raids and flagged members are only recorded in Logs.</p>}
       {v.enabled && v.mode === 'enforce' && !v.raiseVerification && v.lockChannels.length === 0 && (
         <p className="small text-warn">Enforce is on, but the lockdown does nothing: raise the verification level and/or choose channels to lock.</p>
@@ -1068,7 +1039,6 @@ export function AntiRaidSection({ s, onSaved }: { s: DiscordProtectionState; onS
         <IdChips
           label="Lock these channels"
           noun="channel"
-          hint="@everyone can’t send messages, create threads or react there during a lockdown."
           items={channels}
           value={v.lockChannels}
           onChange={(lockChannels) => setV({ ...v, lockChannels })}
@@ -1097,7 +1067,6 @@ export function AntiRaidSection({ s, onSaved }: { s: DiscordProtectionState; onS
             ))}
           </select>
           {p['gate.minAccountAgeDays'] && <span className="field-error">{p['gate.minAccountAgeDays']}</span>}
-          <span className="field-hint">“Hold” works with buttons that use the Verify action (Discord → Embed Creator → Buttons & Menus).</span>
         </label>
       </fieldset>
 
@@ -1127,7 +1096,6 @@ export function LockdownSection({ s, onChanged, variant = 'card' }: { s: Discord
   if (guilds.length === 0) return null;
   return (
     <Frame variant={variant} id={`conduit-lockdown-${variant}`} title={variant === 'card' ? 'Lockdown in effect' : 'Lockdown by hand'}>
-      {variant === 'panel' && <p className="muted small">A lockdown raised by hand stays until you lift it.</p>}
       <ErrorBanner error={error} />
       <ul className="item-list">
         {guilds.map((g) => {
@@ -1232,16 +1200,11 @@ export function BotBaitSection({ s, onSaved }: { s: DiscordProtectionState; onSa
   const warning = botbaitWarning(s.botbait.action);
   return (
     <div className="protection-panel">
-      <p className="muted small">
-        Tell members not to post in these channels; anyone who does (bots, moderators and exempt roles aside) is treated as a spam account. Bot needs: View
-        Channel and Manage Messages there, plus Timeout, Kick or Ban Members for those actions.
-      </p>
       {v.enabled && v.channels.length === 0 && <p className="small text-warn">Choose at least one bait channel: nothing is watched yet.</p>}
       {v.enabled && !v.alertChannel && <p className="small text-warn">No alert channel: catches are only recorded in Logs.</p>}
       <IdChips
         label="Bait channels"
         noun="channel"
-        hint="Use channels no real member has a reason to post in, e.g. a new #do-not-post channel."
         items={channels}
         value={v.channels}
         onChange={(c) => setV({ ...v, channels: c })}
@@ -1316,7 +1279,7 @@ export function BotBaitSection({ s, onSaved }: { s: DiscordProtectionState; onSa
         <div className="stack">
           <h3>Warning message</h3>
           <p className="muted small">
-            Post a notice in a bait channel so real members stay out: “<strong>{warning.title}</strong> — {warning.description}”
+            “<strong>{warning.title}</strong> — {warning.description}”
           </p>
           <div className="editor-row">
             {s.botbait.channels.map((id) => (

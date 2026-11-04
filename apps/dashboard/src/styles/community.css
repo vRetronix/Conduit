@@ -1,17 +1,6 @@
 /* Community features (both platforms): commands and variables, giveaways, moderation, automations. */
 
-/* ── Bot Accounts and Commands pages ───────────────────────────────────── */
-
-.bot-account {
-  display: grid;
-  gap: 12px;
-}
-
-.bot-account .connection-head h2 {
-  flex: 1;
-  margin: 0;
-  font-size: 18px;
-}
+/* ── Commands pages ─────────────────────────────────────────────────────── */
 
 .commands-head {
   display: flex;
@@ -27,14 +16,6 @@
 }
 
 /* A default command's example, under its message. */
-.command-example {
-  margin-top: 4px;
-}
-
-.command-example code {
-  font-size: 11px;
-}
-
 .commands-head h2 {
   flex: 1;
   margin: 0;

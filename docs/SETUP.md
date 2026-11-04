@@ -58,7 +58,8 @@ cards are the only place to manage connections.
 - **Not Connected** / **Connecting** (yellow) / **Connected** comes from the local backend, never from the UI itself.
 - **Discord:** **Connect** starts a guided setup (see [Connecting Discord](#connecting-discord)).
 - **Kick:** **Connect Kick** opens a short setup (see [Connecting Kick](#connecting-kick)).
-- **YouTube and Twitch are not implemented yet.** Their cards say so, and **Connect** explains it.
+- **Twitch:** **Connect Twitch** opens a short setup (see [Connecting Twitch](#connecting-twitch)).
+- **YouTube is not implemented yet.** Its card says so, and **Connect** explains it.
 - CONDUIT never asks for platform passwords. **Connect** opens the platform's own authorization page in your
   browser.
 - The Discord card shows four separate statuses — **Account**, **Application**, **Bot** and **Server** — each
@@ -262,9 +263,81 @@ Chat messages are kept in memory only (the last 25) and are not saved.
 
 Kick commands are managed on the **Commands** page; see [Commands](#commands).
 
+## Connecting Twitch
+
+Twitch also works with **your own** Twitch app; there is no shared CONDUIT app. Select **Connect Twitch** on the Twitch
+card. The setup window has four steps, **Twitch App**, **Your Account**, **Chatbot** and **Live Chat**, and opens at
+the first one that isn't done.
+The card shows **Connected** when your account's authorization is valid, **Connecting** while you approve in the
+browser, **Needs Reconnect** when Twitch rejected it, and **Not Connected** otherwise.
+
+### 1. Twitch App (once)
+
+1. Turn on two-factor authentication for your Twitch account; Twitch requires it for the Developer Console.
+2. Select **Open Twitch Developer Console** (it opens [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps))
+   and select **Register Your Application**. Give it any name, choose any category, and **Confidential** as the client
+   type.
+3. Add the OAuth Redirect URL exactly as the setup window shows it (use **Copy**):
+
+   ```text
+   http://localhost:47821/oauth/twitch/callback
+   ```
+4. Open the app (**Manage**), copy its **Client ID**, select **New Secret**, and copy the **Client Secret** into CONDUIT.
+   Select **Verify and save**. CONDUIT checks them with Twitch before saving. The secret is stored encrypted (DPAPI)
+   and never shown again.
+
+This is all **Twitch Notifications** needs.
+
+### 2. Your Account
+
+Select **Connect Twitch account**. Twitch's page opens in your browser and asks only for chat: `user:read:chat` (to
+read your channel's chat) and, when your main account is the chatbot, `user:write:chat` (to post in it). After you
+approve it, the card shows your name and avatar. Twitch requires apps to check their authorization every hour, so
+CONDUIT does that while it runs. If you remove CONDUIT under Twitch → Settings → Connections, the card shows **Needs
+Reconnect**. **Disconnect** revokes CONDUIT's access at Twitch.
+
+**Connected with 1.1.0?** That version asked for no permissions, so the card shows **Allow Chat**. Select it and
+approve on Twitch once more. Twitch Notifications keep working either way.
+
+### 3. Chatbot
+
+Choose which Twitch account CONDUIT's chatbot posts as:
+- **Use my main account**: the simplest choice; nothing else to set up.
+- **Use a separate bot account**: a second Twitch account you own. Twitch signs in whoever is logged in to twitch.tv in
+  your browser, so log in as the bot account first (or use a private window), then select **Add Bot Account**. It asks
+  only for `user:write:chat`. The same Twitch account can't be both the main account and the bot account.
+
+  **Tip:** make the bot account a moderator: type `/mod YourBotName` in your Twitch chat. Twitch treats it like any
+  other viewer otherwise, so it can drop its messages (replies, timed messages, test messages) when your chat is in
+  followers-only, subscribers-only or slow mode. Moderators can also send more messages (100 instead of 20 every 30
+  seconds). Your main account is the broadcaster, so it doesn't need this.
+
+### 4. Live Chat
+
+CONDUIT receives your channel's chat through Twitch's EventSub WebSocket. CONDUIT opens this connection itself, so
+**Twitch needs no tunnel** (unlike Kick). It subscribes to your channel's chat (`channel.chat.message`) as your main
+account. **Connected** means Twitch confirmed the subscription. If the connection drops, CONDUIT opens it again on its
+own (after 5 seconds, then longer waits); **Retry** does it now. If Twitch ends the subscription (for example, you
+removed CONDUIT on twitch.tv), the step says so and you connect again.
+
+The step lists the latest messages (kept in memory only, never saved) and has **Send a test message**. It posts as
+the chatbot account, only when you select it, and reports what Twitch answered (for example, a message dropped
+because the chat is in followers-only mode). In a shared chat session, messages from the other channels are ignored.
+
+### 5. Twitch commands
+
+Twitch commands are managed on the **Commands** page; see [Commands](#commands).
+
 ## Commands
 
-**Commands** in the sidebar holds every command, with a tab for **Discord** and one for **Kick**.
+**Commands** in the sidebar holds every command, with a tab each for **Discord**, **Kick** and **Twitch**.
+
+**Twitch** has custom commands (no default commands yet). They work like Kick's: a `!trigger`, a one-line reply of up
+to 500 characters, permissions and cooldowns. **Moderators** means Twitch's moderator badge (or lead moderator).
+**Subscribers** means the subscriber or founder badge. Replies post as the Twitch chatbot account; CONDUIT never
+answers its own messages. Stream variables such as `{title}`, `{category}`, `{viewers}`, `{uptime}` and `{url}`
+use your **Twitch** stream in Twitch commands. Kick's experimental website variables and Discord-only variables aren't
+available there.
 
 Each platform has two tabs, like browser tabs: **Default Commands** and **Custom Commands** (each with a count).
 
@@ -523,8 +596,8 @@ includes them; winner announcements show the winner's name and the prize only.
 
 ## Moderation
 
-**Kick Moderation** (sidebar → Kick) and **Discord Bot** (sidebar → Discord: tabs **Settings**, **Protection**, **Logs**); YouTube and Twitch Moderation are
-marked *Soon* (planned, not connected, no permissions requested). Neither working page has manual buttons:
+**Kick Moderation** (sidebar → Kick) and **Discord Bot** (sidebar → Discord: tabs **Settings**, **Protection**, **Logs**); Twitch Moderation and
+YouTube are marked *Soon* (planned, not connected, no permissions requested). Neither working page has manual buttons:
 actions happen through **automated protection** (Kick) and CONDUIT's **moderation commands in Discord**. The pages
 configure protection and show what happened.
 
@@ -704,14 +777,15 @@ both logs, select a name for that person's history.
 
 ## Navigation
 
-The sidebar is organised by platform: **Overview** (Dashboard, Commands, Giveaways, Timed Messages),
-**Discord** (Discord Bot, with its Settings, Protection and Logs tabs; Sticky Messages; Loyalty & Rewards), **Kick** (Kick
-Moderation, Kick Notifications, Clips), **Twitch** and **YouTube** (Notifications and Moderation, *Soon*) and **Coming later**.
-Pinned to the bottom of the sidebar (always visible): **Settings** and the version. Settings shows About CONDUIT
+The sidebar starts with Dashboard, Commands, Giveaways and Timed Messages, then is organised by platform: **Discord**
+(Discord Bot, with its Settings, Protection and Logs tabs; Sticky Messages; Embed Creator; Loyalty & Rewards), **Kick**
+(Kick Moderation, Kick Notifications, Clips), **Twitch** (Twitch Notifications; Moderation *Soon*), **YouTube** (*Soon*)
+and **OBS Overlays** (*Soon*). Each platform heading folds its group.
+Pinned to the bottom of the sidebar (always visible): **Settings** and "Made by Retronix". Settings shows About CONDUIT
 (version, release channel, build), **Backup & Restore**, **Logs** and the release notes (see [Settings](#settings)).
-*Soon* items are gray and can't be opened. Accounts are managed on the **Dashboard**: each connection card shows its
-status and has **Manage** / **Continue Setup** (Discord setup; Kick setup, whose Chatbot step shows the Kick Bot
-Account).
+*Soon* items are gray and can't be opened. Each page's main actions (**New…**, **Add streamer**) sit at the top right,
+next to its title. Accounts are managed on the **Dashboard**: each connection card shows its status and has **Manage** /
+**Continue Setup**.
 
 ## Appearance & Themes
 
@@ -743,8 +817,8 @@ warnings after ten, errors stay until closed. The same alert isn't repeated with
 
 ## Timed Messages
 
-**Overview → Timed Messages**: a message repeated in your **Kick chat** (as the chatbot, one line of text — Kick chat
-has no embeds) or a **Discord channel** (text and/or an embed). Each one can post:
+**Overview → Timed Messages**: a message repeated in your **Kick chat** or **Twitch chat** (as the chatbot, one line of
+text — neither chat has embeds) or in a **Discord channel** (text and/or an embed). Each one can post:
 
 - **every X minutes** (5–1440): the clock starts when it's switched on (nothing is posted at that moment) and restarts
   after each post;
@@ -905,7 +979,24 @@ off, the category that needs it says which to turn on.
   fails, it's retried on the next checks (up to 5 times).
 - **When the stream ends:** that session's post is deleted (if chosen) or left. Already deleted counts as done.
 - If Kick can't be reached, nothing changes (no post, no deletion) until it can.
-- **Twitch Notifications** and **YouTube Notifications** are marked *Soon*.
+- **YouTube** is marked *Soon*.
+
+## Twitch Notifications
+
+**Twitch → Twitch Notifications** posts in Discord when a Twitch streamer goes live — your channel or anyone's. It works
+just like [Kick Notifications](#kick-notifications) (the post, layout, role, preview, **Send test**, one post per
+stream, deleting the post when the stream ends). The differences:
+
+- **Setup:** only the [Twitch App](#1-twitch-app-once) is needed; no Twitch account has to be connected.
+- **Add streamer:** a Twitch channel name or twitch.tv link (CONDUIT checks it exists).
+- **The default layout** is Kick's in Twitch purple: *Live now! {streamer} is streaming on Twitch!*, *twitch.tv/{streamer}*
+  in the footer and a *Watch {streamer} on Twitch!* button. `{url}` is the streamer's twitch.tv page.
+- **How live status is read:** every minute while CONDUIT runs, from Twitch's Helix API (`GET /helix/users` and
+  `GET /helix/streams`, up to 100 streamers per request) with your own Twitch app (an app access token: public
+  information only, no rights over other channels). Twitch's display name and profile picture come with each check.
+- **Thumbnail:** Twitch's live preview at 1280×720. Twitch keeps the same image link for a whole stream, so CONDUIT adds
+  a time marker that changes every 10 minutes; Discord then shows the newer preview when the post is refreshed.
+- If Twitch can't be reached, nothing changes (no post, no deletion) until it can.
 
 ## Kick Clips
 
@@ -964,10 +1055,8 @@ shown. Only the most recent part of each file is read, so large logs stay fast.
 
 ## The Kick Bot Account
 
-**Dashboard → Kick → Manage → Chatbot** shows the **Kick Bot Account** — the separate Kick account the chatbot can post
-as: its name, Kick user ID, the permissions Kick granted it and when Kick last verified it, whether the chatbot posts as
-it, and the main account it is separate from. Add, reconnect, replace or disconnect it there. Moderation and Channel
-Points always use the main account. If the chatbot uses the main account, it says **Not configured**. No tokens or
+**Dashboard → Kick → Manage → Chatbot** shows the separate Kick account the chatbot can post as, with **Add**,
+**Reconnect**, **Replace** or **Disconnect**. Moderation and Channel Points always use the main account. No tokens or
 secrets are ever shown. The Discord bot is managed from **Dashboard → Discord → Manage**.
 
 ## Retired: Automations (Phase 11)

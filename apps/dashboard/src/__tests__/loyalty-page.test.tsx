@@ -43,7 +43,6 @@ describe('Loyalty & Rewards page', () => {
     expect(t).toContain('Loyalty is off');
     expect(t).toContain('Levels, balances and history are kept');
     for (const tab of ['Overview', 'Levels & XP', 'Members', 'Points & Earning', 'Rewards', 'Redemptions']) expect(t).toContain(tab);
-    expect(t).toContain('XP and points are never converted into each other');
     expect(t).not.toMatch(/Kick/);
   });
 
@@ -64,10 +63,10 @@ describe('Loyalty & Rewards page', () => {
     expect(t).toContain('98,765');
     expect(t).toContain('1,234');
     expect(t).toContain('Level 3 role for alice wasn’t given');
-    expect(t).toContain('2 older Kick balances (40 points) are kept as history');
+    expect(t).not.toContain('older Kick balance');
   });
 
-  it('levels tab: XP rules, the formula, announcements and role rewards with their problems', async () => {
+  it('levels tab: XP rules, the level table, announcements and role rewards with their problems', async () => {
     const { LoyaltyView } = await import('../pages/discord/LoyaltyPage');
     const t = text(
       renderToStaticMarkup(
@@ -77,10 +76,9 @@ describe('Loyalty & Rewards page', () => {
         />,
       ),
     );
-    expect(t).toContain('XP per message (random)');
-    expect(t).toContain('5 × L² + 50 × L + 100');
-    expect(t).toContain('Repeats can only be recognised while the bot receives message text');
-    expect(t).toContain('Each level is announced once');
+    expect(t).toContain('XP per message, at most every');
+    expect(t).toContain('How levels work');
+    expect(t).not.toMatch(/5 × L²|Each level is announced once|Bots, webhooks and system messages/);
     expect(t).toContain('Include an embed');
     expect(t).toContain('Level 5');
     expect(t).toContain('@Regular');

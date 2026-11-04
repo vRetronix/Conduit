@@ -229,10 +229,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.clip-note {
-  margin: 12px 0 0;
-}
-
 @media (max-width: 760px) {
   .clip-item {
     flex-direction: column;

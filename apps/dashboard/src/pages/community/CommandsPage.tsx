@@ -31,10 +31,10 @@ import { PlatformIcon } from '../../components/PlatformIcon';
 import { useAsync, useBackendStatus, usePolling } from '../../hooks';
 
 const POLL_MS = 4000;
-const PLATFORM_LABEL: Record<CommandPlatform, string> = { discord: 'Discord', kick: 'Kick' };
+const PLATFORM_LABEL: Record<CommandPlatform, string> = { discord: 'Discord', kick: 'Kick', twitch: 'Twitch' };
 
 const OUTCOME_LABEL: Record<NonNullable<CustomCommandView['lastRun']>['outcome'], string> = {
-  sent: 'Replied (confirmed)',
+  sent: 'Replied',
   failed: 'Reply failed',
   unconfirmed: 'Reply not confirmed',
   blocked: 'Blocked',
@@ -46,13 +46,13 @@ const OUTCOME_TONE: Record<NonNullable<CustomCommandView['lastRun']>['outcome'],
   blocked: 'muted',
 };
 
-/** Commands: one place for Discord and Kick commands — built-in (default) and your own (custom). */
+/** Commands: one place for Discord, Kick and Twitch commands — built-in (default) and your own (custom). */
 export function CommandsPage() {
   const [platform, setPlatform] = useState<CommandPlatform>('discord');
   return (
     <div className="stack">
       <div className="platform-tabs" role="tablist" aria-label="Platform">
-        {(['discord', 'kick'] as const).map((p) => (
+        {(['discord', 'kick', 'twitch'] as const).map((p) => (
           <button
             key={p}
             type="button"
@@ -82,7 +82,8 @@ function PlatformCommands({ platform }: { platform: CommandPlatform }) {
   const { data, error, reload } = state;
   usePolling(reload, error ? 2000 : POLL_MS, [data, error]);
   if (!data) return <Loading label={error ? `Waiting for the CONDUIT backend… (${errorMessage(error)})` : 'Loading commands…'} />;
-  return <CommandsView s={data} onChanged={reload} />;
+  // Twitch has no built-in commands yet: open on its own commands.
+  return <CommandsView s={data} onChanged={reload} initialSection={platform === 'twitch' ? 'custom' : 'defaults'} />;
 }
 
 // ── Discord ───────────────────────────────────────────────────────────────────
@@ -121,11 +122,10 @@ const groupLabel = (g: DiscordAccessGroup) => ACCESS_GROUP_HELP[g].label;
 interface DefaultRow {
   trigger: string;
   access: string;
-  /** What the command does: shown when hovering over it. */
+  /** What the command does, and a filled-in example of using it: shown when hovering over it. */
   description: string;
   /** What it answers, with {variables} where the details go; null when it doesn't reply. */
   message: string | null;
-  /** A filled-in example of using it, under the message. */
   example: string | null;
   enabled: boolean;
   /** False for built-ins that can't be switched off (e.g. !enter): their switch stays on. */
@@ -174,17 +174,12 @@ function DefaultCommandsTable({
               </label>
             </td>
             <td>
-              <code title={r.description}>{r.trigger}</code>
+              <code title={r.example ? `${r.description}\n${r.example}` : r.description}>{r.trigger}</code>
             </td>
             <td className="small">{accessCell ? accessCell(r) : r.access}</td>
             <td className="cell-wrap">
-              {r.message ? <MessageTemplate text={r.message} /> : <span className="muted">No reply in chat</span>}
-              {r.example && (
-                <div className="muted small command-example">
-                  Example: <code>{r.example}</code>
-                </div>
-              )}
-              {r.note && <div className="field-hint">{r.note}</div>}
+              {r.message ? <MessageTemplate text={r.message} /> : <span className="muted">No reply</span>}
+              {r.note && <div className="field-hint text-warn">{r.note}</div>}
             </td>
           </tr>
         ))}
@@ -352,13 +347,6 @@ export function CommandsView({
           />
         )}
         <ErrorBanner error={saving.error} />
-        {(!discordDefaults || editingAccess) && (
-          <p className="muted small">
-            {discordDefaults
-              ? `Admin: ${ACCESS_GROUP_HELP.admin.who.toLowerCase()}. Moderator: ${ACCESS_GROUP_HELP.moderator.who.toLowerCase()}. Anyone: everyone. Moderation commands also need their Discord permission.`
-              : 'Built into CONDUIT; a command switched off is ignored in chat. A custom command with the same trigger answers instead of the default. Moderator commands act with your main Kick account.'}
-          </p>
-        )}
             </>
           ),
           custom: <CustomCommandsPanel s={s} onChanged={onChanged} />,
@@ -425,14 +413,7 @@ function CustomCommandsPanel({ s, onChanged }: { s: CommandsHubState; onChanged?
 
       {s.custom.length === 0 ? (
         editing === null && (
-          <div className="empty-state">
-            <p>No custom {PLATFORM_LABEL[s.platform]} commands yet.</p>
-            <p className="muted small">
-              {s.platform === 'kick'
-                ? 'For example !discord → “Join our Discord community, {user}!”.'
-                : 'For example /discord → “Join our Discord community, {user}!”.'}
-            </p>
-          </div>
+          <p className="empty-note">No custom {PLATFORM_LABEL[s.platform]} commands yet.</p>
         )
       ) : (
         <div className="table-scroll">
@@ -474,10 +455,7 @@ function CustomCommandsPanel({ s, onChanged }: { s: CommandsHubState; onChanged?
                     {/* Discord: its description; Kick commands have none, so the reply is shown. */}
                     {c.description ?? c.response}
                     {c.unknownVariables.length > 0 && (
-                      <div className="field-hint text-warn">
-                        {c.unknownVariables.join(', ')} isn’t a variable for {PLATFORM_LABEL[s.platform]} commands; it’s posted as written. See
-                        Variables in the editor.
-                      </div>
+                      <div className="field-hint text-warn">Not a variable: {c.unknownVariables.join(', ')}</div>
                     )}
                   </td>
                   <td>
@@ -558,6 +536,7 @@ export function checkCommandForm(
 /** Example values for the editor preview — clearly labelled as examples, never used for real replies. */
 export const PREVIEW_VALUES: Record<CommandPlatform, { user: string; channel: string; args: string }> = {
   kick: { user: 'ExampleViewer', channel: 'yourchannel', args: 'hi there' },
+  twitch: { user: 'ExampleViewer', channel: 'yourchannel', args: 'hi there' },
   discord: { user: 'exampleviewer', channel: 'general', args: 'hi there' },
 };
 
@@ -568,12 +547,12 @@ export function previewData(platform: CommandPlatform, template: string, name: s
   for (const op of counterOps(template)) counters[op.name] = op.op === 'set' ? op.amount : (counters[op.name] ?? 7) + op.amount;
   return {
     user: ex.user,
-    userId: platform === 'kick' ? '12345678' : '123456789012345678',
+    userId: platform === 'discord' ? '123456789012345678' : '12345678',
     channel: ex.channel,
     args: ex.args,
     message: `${name} ${ex.args}`,
-    stream: { streamer: 'YourChannel', url: 'https://kick.com/yourchannel', live: true, title: 'Example stream title', category: 'Example category', viewers: 128, startedAt: new Date(Date.now() - (2 * 60 + 15) * 60_000).toISOString() },
-    commands: platform === 'kick' ? ['!enter', name] : ['/ping', name],
+    stream: { streamer: 'YourChannel', url: platform === 'twitch' ? 'https://twitch.tv/yourchannel' : 'https://kick.com/yourchannel', live: true, title: 'Example stream title', category: 'Example category', viewers: 128, startedAt: new Date(Date.now() - (2 * 60 + 15) * 60_000).toISOString() },
+    commands: platform === 'kick' ? ['!enter', name] : platform === 'twitch' ? [name] : ['/ping', name],
     count: 42,
     counters,
     randomUser: 'SomeViewer',
@@ -598,7 +577,7 @@ export function CommandEditor({
   onCancel: () => void;
   onSaved: () => void;
 }) {
-  const [trigger, setTrigger] = useState(initial?.trigger ?? (platform === 'kick' ? '!' : '/'));
+  const [trigger, setTrigger] = useState(initial?.trigger ?? (platform === 'discord' ? '/' : '!'));
   const [description, setDescription] = useState(initial?.description ?? '');
   const [response, setResponse] = useState(initial?.response ?? '');
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
@@ -652,8 +631,7 @@ export function CommandEditor({
     }
   }
 
-  const ex = PREVIEW_VALUES[platform];
-  const name = trigger.trim() || (platform === 'kick' ? '!command' : '/command');
+  const name = trigger.trim() || (platform === 'discord' ? '/command' : '!command');
   const preview = response.trim() ? renderCommand(response, previewData(platform, response, name), platform) : '';
 
   return (
@@ -667,7 +645,7 @@ export function CommandEditor({
     >
       <div className="stack">
         <div className="field">
-          <label htmlFor="command-trigger">{platform === 'kick' ? 'Trigger' : 'Command name'}</label>
+          <label htmlFor="command-trigger">{platform !== 'discord' ? 'Trigger' : 'Command name'}</label>
           <input
             id="command-trigger"
             value={trigger}
@@ -675,15 +653,15 @@ export function CommandEditor({
             autoComplete="off"
             spellCheck={false}
             maxLength={33}
+            placeholder={platform === 'discord' ? '/discord' : '!discord'}
             aria-invalid={err('trigger') ? true : undefined}
             aria-describedby="command-trigger-note"
           />
-          <span id="command-trigger-note" className={err('trigger') ? 'field-error' : 'field-hint'}>
-            {err('trigger') ??
-              (platform === 'kick'
-                ? 'For example !discord. Letters, numbers, - and _; upper/lower case doesn’t matter.'
-                : 'For example /discord (people type / in Discord and pick it). Lower-case letters, numbers, - and _.')}
-          </span>
+          {err('trigger') && (
+            <span id="command-trigger-note" className="field-error">
+              {err('trigger')}
+            </span>
+          )}
         </div>
         {platform === 'discord' && (
           <div className="field">
@@ -696,14 +674,16 @@ export function CommandEditor({
               aria-invalid={err('description') ? true : undefined}
               aria-describedby="command-description-note"
             />
-            <span id="command-description-note" className={err('description') ? 'field-error' : 'field-hint'}>
-              {err('description') ?? 'Shown in Discord’s command list (required by Discord).'}
-            </span>
+            {err('description') && (
+              <span id="command-description-note" className="field-error">
+                {err('description')}
+              </span>
+            )}
           </div>
         )}
         <div className="field">
           <label htmlFor="command-response">Response</label>
-          {platform === 'kick' ? (
+          {platform !== 'discord' ? (
             <input
               id="command-response"
               ref={responseRef}
@@ -726,48 +706,33 @@ export function CommandEditor({
               aria-describedby="command-response-note"
             />
           )}
-          <span id="command-response-note" className={err('response') ? 'field-error' : 'field-hint'}>
-            {err('response') ??
-              (platform === 'kick'
-                ? 'Plain text, up to 500 characters, with variables from the panel.'
-                : 'Up to 2000 characters, with variables from the panel. Discord markdown works: **bold**, *italic*, __underline__, ~~strikethrough~~, ||spoiler||, `code`, [links](https://…), and on their own lines # headings, -# small text, > quotes, - lists and ``` code blocks.')}
-          </span>
+          {err('response') && (
+            <span id="command-response-note" className="field-error">
+              {err('response')}
+            </span>
+          )}
         </div>
-        {preview &&
-          (platform === 'kick' ? (
-            <p className="small">
-              <span className="muted">Preview with example values (</span>
-              <span className="muted">
-                user “{ex.user}”, channel “{ex.channel}”, text “{ex.args}”):
-              </span>{' '}
+        {preview && (
+          <div className="field">
+            <span className="field-label">Preview</span>
+            {platform !== 'discord' ? (
               <span className="command-preview">{preview}</span>
-            </p>
-          ) : (
-            <div className="small">
-              <span className="muted">
-                Preview with example values (user “{ex.user}”, channel “{ex.channel}”, text “{ex.args}”):
-              </span>
+            ) : (
               <div className="command-preview md-preview">
                 <DiscordMarkdown text={preview} />
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+        )}
         <fieldset className="choice-list access-section">
           <legend>Permissions</legend>
-          {COMMAND_PERMISSIONS.map((p) => {
+          {/* Only the levels this platform has (Discord has no subscribers). */}
+          {COMMAND_PERMISSIONS.filter((p) => PERMISSION_HELP[platform][p].available).map((p) => {
             const help = PERMISSION_HELP[platform][p];
             return (
-              <label key={p} className={help.available ? undefined : 'muted'}>
-                <input
-                  type="radio"
-                  name="command-permission"
-                  value={p}
-                  checked={permission === p}
-                  disabled={!help.available}
-                  onChange={() => setPermission(p)}
-                />{' '}
+              <label key={p} title={help.who}>
+                <input type="radio" name="command-permission" value={p} checked={permission === p} onChange={() => setPermission(p)} />{' '}
                 {help.label}
-                <span className="muted small"> — {help.who}</span>
               </label>
             );
           })}
@@ -782,8 +747,8 @@ export function CommandEditor({
             </label>
             <select id="command-cooldown-mode" value={cooldownMode} onChange={(e) => setCooldownMode(e.target.value as CooldownMode)}>
               <option value="none">No cooldown</option>
-              <option value="user">Per user — each person waits between uses</option>
-              <option value="global">Global — everyone waits after anyone uses it</option>
+              <option value="user">Per user</option>
+              <option value="global">Everyone</option>
             </select>
             {cooldownMode !== 'none' && (
               <>
@@ -806,12 +771,11 @@ export function CommandEditor({
               </>
             )}
           </div>
-          <span id="command-cooldown-note" className={err('cooldownSeconds') ? 'field-error' : 'field-hint'}>
-            {err('cooldownSeconds') ??
-              (cooldownMode === 'none'
-                ? 'The command can be used again right away.'
-                : `${COOLDOWN_MIN_SECONDS}–${COOLDOWN_MAX_SECONDS} seconds. Blocked uses get no reply in chat${platform === 'discord' ? ' (Discord shows the user a private note)' : ''}; cooldowns reset when CONDUIT restarts.`)}
-          </span>
+          {err('cooldownSeconds') && (
+            <span id="command-cooldown-note" className="field-error">
+              {err('cooldownSeconds')}
+            </span>
+          )}
         </fieldset>
 
         <label className="hello-toggle">
@@ -834,10 +798,6 @@ export function CommandEditor({
 
       <aside className="variables-help" aria-labelledby="variables-title">
         <h3 id="variables-title">Variables</h3>
-        <p className="muted small">
-          Click one to insert it. It’s replaced with the real value when the command is used. Add <code>|text</code> for a fallback
-          when there’s no value, e.g. <code>{'{touser|everyone}'}</code>.
-        </p>
         {VARIABLE_GROUPS.map((group) => {
           const list = VARIABLES.filter((v) => v.group === group && v.platforms.includes(platform));
           if (list.length === 0) return null;
@@ -857,42 +817,8 @@ export function CommandEditor({
             </details>
           );
         })}
-        <h4>Examples</h4>
-        <ul className="muted small">
-          {platform === 'kick' ? (
-            <>
-              <li>
-                <code>
-                  Hello {'{user}'}, welcome to {'{channel}'}!
-                </code>
-              </li>
-              <li>
-                <code>!so</code> →{' '}
-                <code>
-                  Go follow {'{args}'} at kick.com/{'{args}'}
-                </code>
-              </li>
-            </>
-          ) : (
-            <>
-              <li>
-                <code>
-                  Hello {'{user}'}, welcome to #{'{channel}'}!
-                </code>
-              </li>
-              <li>
-                <code>/say</code> →{' '}
-                <code>
-                  {'{user}'} says: {'{args}'}
-                </code>{' '}
-                (adds a “text” box to the command)
-              </li>
-            </>
-          )}
-        </ul>
-        <p className="muted small">
-          If nothing is given, {'{args}'} is empty. Only these variables work; anything else in braces is rejected. More examples:{' '}
-          <code>{'{user} rolled {random:1-6}'}</code>, <code>{'Deaths: {counter:deaths+1}'}</code>, <code>{'{touser} is {pick:cool;awesome;legendary}'}</code>.
+        <p className="small" title="Shown when the variable has no value">
+          <code>{'{touser|everyone}'}</code> fallback
         </p>
       </aside>
     </form>

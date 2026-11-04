@@ -692,7 +692,7 @@ describe('migration 20', () => {
       `);
       const before = (sql: string) => JSON.stringify(db.prepare(sql).all());
       const snapshot = ['loyalty_accounts', 'loyalty_transactions', 'loyalty_rewards', 'loyalty_redemptions', 'audit_logs'].map((t) => before(`SELECT * FROM ${t} ORDER BY rowid`));
-      expect(migrate(db, migrations)).toEqual({ applied: [20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+      expect(migrate(db, migrations)).toEqual({ applied: [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
       expect(['loyalty_accounts', 'loyalty_transactions', 'loyalty_rewards', 'loyalty_redemptions', 'audit_logs'].map((t) => before(`SELECT * FROM ${t} ORDER BY rowid`))).toEqual(snapshot);
       expect(loyaltyRepo.stats(db)).toEqual({ viewers: 1, outstanding: 40, pending: 1, legacyKick: { accounts: 1, points: 15 } });
       expect(db.prepare('SELECT COUNT(*) AS n FROM loyalty_levels').get()).toEqual({ n: 0 });

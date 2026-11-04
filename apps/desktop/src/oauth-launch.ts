@@ -10,10 +10,15 @@ const AUTHORIZATION_PAGES: Partial<Record<Platform, { origin: string; pathname: 
   discord: { origin: 'https://discord.com', pathname: '/oauth2/authorize', redirectHost: '127.0.0.1', pkce: false },
   // Kick requires PKCE (S256) and recommends a localhost redirect for local apps.
   kick: { origin: 'https://id.kick.com', pathname: '/oauth/authorize', redirectHost: 'localhost', pkce: true },
+  // Twitch's documented authorization-code flow (a confidential app; no PKCE), with a localhost redirect.
+  twitch: { origin: 'https://id.twitch.tv', pathname: '/oauth2/authorize', redirectHost: 'localhost', pkce: false },
 };
 
 /** Kick's developer settings, where users create their own Kick app (fixed URL; nothing comes from the renderer). */
 export const KICK_DEVELOPER_SETTINGS_URL = 'https://kick.com/settings/developer';
+
+/** The Twitch Developer Console's app list, where users create their own Twitch app (fixed URL). */
+export const TWITCH_DEVELOPER_CONSOLE_URL = 'https://dev.twitch.tv/console/apps';
 
 const REQUIRED_PARAMS = ['client_id', 'response_type', 'redirect_uri', 'state'];
 

@@ -1,10 +1,11 @@
 /**
- * Timed Messages: one message posted repeatedly to a Kick chat or a Discord channel, every N minutes and/or after N new
- * chat messages there.
+ * Timed Messages: one message posted repeatedly to your Kick chat, your Twitch chat or a Discord channel, every N
+ * minutes and/or after N new chat messages there.
  *
  * - Time: checked every 15 seconds. The clock starts when the message is switched on (nothing is posted at that moment)
  *   and restarts after each post.
- * - Messages: counted live — Kick from the signed chat events (never the chatbot account or text CONDUIT just posted),
+ * - Messages: counted live — Kick from the signed chat events and Twitch from its EventSub chat events (never the
+ *   chatbot account or text CONDUIT just posted),
  *   Discord from the gateway's message events in that channel (never bots or webhooks). The count is stored with the
  *   timed message (timed_messages.messages_since), so a restart carries on where it left off: 15 of 20 before a
  *   restart means 5 more after it. Each count is one UPDATE statement, so no increment is lost; switching it on or
@@ -13,8 +14,8 @@
  *   from the post, and the count by subtracting the count the post was triggered with (messages that arrive while it
  *   is being sent count towards the next one). One post at a time per message with a minimum gap of 60 s, so
  *   overlapping triggers can never send twice.
- * - Sending goes through the existing paths: Kick via KickChatService (send spacing, token refresh, loop memory),
- *   Discord via DiscordPoster. A failure is recorded and retried after 5 minutes, never in a tight loop.
+ * - Sending goes through the existing paths: Kick via KickChatService and Twitch via TwitchChatService (send spacing,
+ *   token refresh, loop memory), Discord via DiscordPoster. A failure is recorded and retried after 5 minutes, never in a tight loop.
  * - Disabled messages are never sent: every check re-reads the stored enabled flag.
  */
 import crypto from 'node:crypto';
@@ -34,7 +35,8 @@ import { AppError, notFound } from '../errors';
 import type { GuildEvent } from '../discord/discord-bot';
 import { parseInput } from '../validation';
 import type { DiscordPoster } from '../discord/discord-poster';
-import type { KickChatMessage, KickChatService } from '../kick/kick-chat-service';
+import type { KickChatService } from '../kick/kick-chat-service';
+import type { TwitchChatService } from '../twitch/twitch-chat-service';
 
 const TICK_MS = 15_000;
 const RETRY_AFTER_FAILURE_MS = 5 * 60_000;
@@ -44,7 +46,8 @@ export interface TimedMessageServiceOptions {
   db: Database;
   now: () => Date;
   logger: Logger;
-  kick: Pick<KickChatService, 'onMessage' | 'sendResult' | 'sendReadiness' | 'msUntilNextSend' | 'chatbotIdentity' | 'wasRecentlySent' | 'mainChannelName'>;
+  kick: ChatPlatform;
+  twitch: ChatPlatform;
   poster: Pick<DiscordPoster, 'post'>;
   discordChannels: () => Promise<DiscordChannelsState>;
   /** Whether the bot's gateway session is up (message counts for Discord need it). */
@@ -52,25 +55,33 @@ export interface TimedMessageServiceOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
+/** What a timed message needs from a chat platform (the Kick and Twitch chat services have the same shape). */
+type ChatPlatform = Pick<KickChatService | TwitchChatService, 'sendReadiness' | 'msUntilNextSend' | 'chatbotIdentity' | 'wasRecentlySent' | 'mainChannelName'> & {
+  onMessage(listener: (m: { senderUserId: string; content: string }) => void): () => void;
+  sendResult(content: string): Promise<{ ok: true; result: { channel: string } } | { ok: false; outcome: 'failed' | 'unconfirmed'; message: string; locallyThrottled: boolean }>;
+};
+
+const CHAT_NAME = { kick: 'Kick', twitch: 'Twitch' } as const;
+
 export class TimedMessageService {
   private readonly sending = new Set<string>();
   private readonly failedAt = new Map<string, number>();
   private timer: NodeJS.Timeout | null = null;
-  private off: (() => void) | null = null;
+  private offs: Array<() => void> = [];
   private queue: Promise<void> = Promise.resolve();
 
   constructor(private readonly o: TimedMessageServiceOptions) {}
 
   start(): void {
     if (this.timer) return;
-    this.off = this.o.kick.onMessage((m) => this.onKickMessage(m));
+    this.offs = (['kick', 'twitch'] as const).map((p) => this.o[p].onMessage((m) => this.onChatMessage(p, m)));
     this.timer = setInterval(() => this.tick(), TICK_MS);
     this.timer.unref();
   }
 
   stop(): void {
-    this.off?.();
-    this.off = null;
+    for (const off of this.offs) off();
+    this.offs = [];
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
   }
@@ -83,10 +94,14 @@ export class TimedMessageService {
 
   async state(): Promise<TimedMessagesState> {
     const channels = await this.o.discordChannels().catch(() => null);
-    const kick = this.o.kick.sendReadiness();
+    const chat = (p: 'kick' | 'twitch') => {
+      const r = this.o[p].sendReadiness();
+      return { ready: r.ready, problem: r.ready ? null : (r.problem ?? `${CHAT_NAME[p]} chat can’t send messages.`), channel: this.o[p].mainChannelName() };
+    };
     return {
       timedMessages: timedMessagesRepo.list(this.o.db).map((r) => this.view(r, channels)),
-      kick: { ready: kick.ready, problem: kick.ready ? null : (kick.problem ?? 'Kick chat can’t send messages.'), channel: this.o.kick.mainChannelName() },
+      kick: chat('kick'),
+      twitch: chat('twitch'),
       discord: {
         ready: channels !== null && channels.problem === null,
         problem: channels?.problem ?? (channels ? null : 'Discord isn’t reachable.'),
@@ -136,10 +151,11 @@ export class TimedMessageService {
 
   // ── triggers ───────────────────────────────────────────────────────────────
 
-  private onKickMessage(m: KickChatMessage): void {
+  private onChatMessage(platform: 'kick' | 'twitch', m: { senderUserId: string; content: string }): void {
     // People only: the chatbot account and text CONDUIT just posted (when the chatbot is the main account) never count.
-    if (m.senderUserId === this.o.kick.chatbotIdentity().userId || this.o.kick.wasRecentlySent(m.content)) return;
-    this.count((c) => c.platform === 'kick');
+    const chat = this.o[platform];
+    if (m.senderUserId === chat.chatbotIdentity().userId || chat.wasRecentlySent(m.content)) return;
+    this.count((c) => c.platform === platform);
   }
 
   /** A Discord message (from the bot's gateway session). Bots and webhooks never count. */
@@ -207,7 +223,7 @@ export class TimedMessageService {
     if (!r || !r.enabled || !c) return;
     let result: { ok: boolean; detail: string };
     try {
-      result = c.platform === 'kick' ? await this.sendKick(c.content) : await this.sendDiscord(c);
+      result = c.platform === 'discord' ? await this.sendDiscord(c) : await this.sendChat(c.platform, c.content);
     } catch (err) {
       this.o.logger.error('timed message send failed', { err });
       result = { ok: false, detail: 'Something went wrong sending it.' };
@@ -221,16 +237,18 @@ export class TimedMessageService {
     this.o.logger.info('timed message', { id, platform: c.platform, reason, ok: result.ok });
   }
 
-  private async sendKick(content: string): Promise<{ ok: boolean; detail: string }> {
-    const readiness = this.o.kick.sendReadiness();
-    if (!readiness.ready) return { ok: false, detail: `Kick chat can’t send: ${readiness.problem ?? 'not connected.'}` };
+  private async sendChat(platform: 'kick' | 'twitch', content: string): Promise<{ ok: boolean; detail: string }> {
+    const chat = this.o[platform];
+    const name = CHAT_NAME[platform];
+    const readiness = chat.sendReadiness();
+    if (!readiness.ready) return { ok: false, detail: `${name} chat can’t send: ${readiness.problem ?? 'not connected.'}` };
     for (let attempt = 0; ; attempt++) {
-      const wait = this.o.kick.msUntilNextSend();
+      const wait = chat.msUntilNextSend();
       if (wait > 0) await (this.o.sleep ?? ((ms) => new Promise((res) => setTimeout(res, ms))))(Math.min(wait, 5000));
-      const out = await this.o.kick.sendResult(content);
-      if (out.ok) return { ok: true, detail: `Posted in ${out.result.channel}’s Kick chat.` };
+      const out = await chat.sendResult(content);
+      if (out.ok) return { ok: true, detail: `Posted in ${out.result.channel}’s ${name} chat.` };
       if (out.locallyThrottled && attempt === 0) continue;
-      return { ok: false, detail: out.outcome === 'unconfirmed' ? `Kick may or may not have posted it: ${out.message}` : out.message };
+      return { ok: false, detail: out.outcome === 'unconfirmed' ? `${name} may or may not have posted it: ${out.message}` : out.message };
     }
   }
 
@@ -256,10 +274,10 @@ export class TimedMessageService {
     const anchor = Date.parse(r.lastSentAt ?? r.enabledAt ?? r.createdAt);
     let destination: string | null = null;
     let problem: string | null = null;
-    if (c.platform === 'kick') {
-      const ch = this.o.kick.mainChannelName();
-      destination = ch ? `${ch}’s Kick chat` : 'Your Kick chat';
-      // Whether Kick chat is connected is account status: shown on the Dashboard (and as a pop-up when it changes).
+    if (c.platform !== 'discord') {
+      const ch = this.o[c.platform].mainChannelName();
+      destination = ch ? `${ch}’s ${CHAT_NAME[c.platform]} chat` : `Your ${CHAT_NAME[c.platform]} chat`;
+      // Whether the chat is connected is account status: shown on the Dashboard (and as a pop-up when it changes).
     } else {
       const guild = channels?.guilds.find((g) => g.id === c.guildId);
       const channel = guild?.channels.find((x) => x.id === c.channelId);

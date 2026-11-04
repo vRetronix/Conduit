@@ -34,6 +34,7 @@ describe('Timed Messages page', () => {
   const state = (over: Partial<TimedMessagesState> = {}): TimedMessagesState => ({
     timedMessages: [],
     kick: { ready: true, problem: null, channel: 'retronix' },
+    twitch: { ready: true, problem: null, channel: 'retrotwitch' },
     discord: { ready: true, problem: null, messageEvents: true },
     ...over,
   });
@@ -102,7 +103,7 @@ describe('Timed Messages page', () => {
 });
 
 describe('Sticky Messages page', () => {
-  it('explains how reposting works and what the bot needs; shows each sticky’s channel and status', async () => {
+  it('shows each sticky’s channel, message and status, with no explanations', async () => {
     const { StickyMessagesView } = await import('../pages/discord/StickyMessagesPage');
     const s: StickyMessagesState = {
       stickies: [
@@ -128,9 +129,9 @@ describe('Sticky Messages page', () => {
       discord: { ready: true, problem: null, messageEvents: true },
     };
     const t = text(renderToStaticMarkup(<StickyMessagesView s={s} />));
-    expect(t).toMatch(/Your stickies When people post, each one moves back to the bottom: the bot posts a fresh copy and deletes the old one./);
+    expect(t).toMatch(/^\s*New sticky/);
     expect(t).not.toMatch(/No privileged intent|Read Message History|Discord can’t pin/);
-    expect(t).toMatch(/Rules in #general in Retro Server Moves to the bottom after each message from people, at most every 15 s/);
+    expect(t).toMatch(/Rules in #general in Retro Server Read the rules The bot is missing a permission/);
     expect(t).toMatch(/Needs attention/);
   });
 });
@@ -157,7 +158,7 @@ describe('Discord Logging page', () => {
     expect(html.match(/<section class="card"/g)).toHaveLength(1);
     expect(html).toMatch(/<div class="form-actions"><button type="button"[^>]*disabled=""[^>]*>Save<\/button><\/div><\/section>$/);
     expect(t).not.toContain('Recently logged');
-    expect(t).toContain('Everything logged is also listed in the Moderation log below.');
+    expect(t).not.toContain('Everything logged is also listed');
     for (const c of ['Moderation', 'Members', 'Messages', 'Server & roles', 'XP & Loyalty']) expect(t).toContain(c);
     for (const e of ['Bans', 'Timeouts', 'Joins', 'Deleted messages', 'Edited messages', 'Channels created, deleted or changed']) expect(t).toContain(e);
     for (const e of ['Level-ups', 'XP adjustments', 'Points adjustments', 'Rewards redeemed', 'Redemptions fulfilled or rejected', 'Level roles given (or refused)', 'Resets (a member, or the leaderboard)']) expect(t).toContain(e);
@@ -204,12 +205,13 @@ describe('Kick Notifications page', () => {
         },
       ],
       kick: { ready: true, problem: null, pollSeconds: 60 },
+      twitch: { ready: true, problem: null, pollSeconds: 60 },
       discord: { ready: true, problem: null },
     };
     const t = text(renderToStaticMarkup(<KickNotificationsView s={s} />));
     expect(t).toMatch(/Retronix kick.com\/retronix → #live-alerts in Retro Server “Speedruns” · Retro Games Live — notification posted\. · deleted when the stream ends Live/);
-    expect(t).toContain('checks Kick every 60 seconds');
-    expect(t).toContain('no rights over other channels');
+    expect(renderToStaticMarkup(<KickNotificationsView s={s} />)).toContain('title="CONDUIT checks every 60 seconds"');
+    expect(t).not.toContain('no rights over other channels');
   });
 });
 
@@ -257,8 +259,26 @@ describe('Kick notification preview', () => {
   it('the page offers Add streamer', async () => {
     const { KickNotificationsView } = await import('../pages/kick/KickNotificationsPage');
     // Opening the editor needs state; render the view and check the static parts of the page instead.
-    const t = text(renderToStaticMarkup(<KickNotificationsView s={{ notifiers: [], kick: { ready: true, problem: null, pollSeconds: 60 }, discord: { ready: true, problem: null } }} />));
+    const t = text(renderToStaticMarkup(<KickNotificationsView s={{ notifiers: [], kick: { ready: true, problem: null, pollSeconds: 60 }, twitch: { ready: true, problem: null, pollSeconds: 60 }, discord: { ready: true, problem: null } }} />));
     expect(t).toContain('Add streamer');
+  });
+
+  it('the Twitch page shows only Twitch streamers, and says when the Twitch app is missing', async () => {
+    const { KickNotificationsView } = await import('../pages/kick/KickNotificationsPage');
+    const base = { enabled: true, guildId: '42', channelId: '5', roleId: null, content: '', embed: DEFAULT_NOTIFICATION_EMBED, buttons: [], deleteWhenEnded: false, createdAt: 'x', updatedAt: 'x', avatarUrl: null, live: false, liveSince: null, title: null, category: null, lastCheckedAt: null, messageId: null, lastNotifiedAt: null, status: 'Offline.', problem: null, destination: '#live in Server' };
+    const s: StreamNotificationsState = {
+      notifiers: [
+        { ...base, platform: 'kick', channel: 'kickstreamer', id: 'k1', displayName: 'KickStreamer' },
+        { ...base, platform: 'twitch', channel: 'twitchstreamer', id: 't1', displayName: 'TwitchStreamer' },
+      ],
+      kick: { ready: true, problem: null, pollSeconds: 60 },
+      twitch: { ready: false, problem: 'Set up your Twitch app first (Dashboard → Twitch → Connect): CONDUIT reads public live status with it.', pollSeconds: 60 },
+      discord: { ready: true, problem: null },
+    };
+    const t = text(renderToStaticMarkup(<KickNotificationsView s={s} platform="twitch" />));
+    expect(t).toContain('TwitchStreamer twitch.tv/twitchstreamer');
+    expect(t).not.toContain('KickStreamer');
+    expect(t).toContain('Set up your Twitch app first');
   });
 });
 
@@ -317,7 +337,7 @@ describe('Kick → Clips page', () => {
 
   it('sits in the Kick group of the sidebar', async () => {
     const { SECTIONS } = await import('../sections');
-    expect(SECTIONS.find((s) => s.id === 'kick-clips')).toMatchObject({ label: 'Clips', group: 'kick', phase: null });
+    expect(SECTIONS.find((s) => s.id === 'kick-clips')).toMatchObject({ label: 'Clips', group: 'kick' });
   });
 
   it('has its own sidebar icon (a clapperboard), like every section — none falls back to the plain square', async () => {
@@ -333,14 +353,13 @@ describe('Kick → Clips page', () => {
     const empty = text(renderToStaticMarkup(<KickClipsView s={state()} />));
     expect(empty.indexOf('Clip settings')).toBeLessThan(empty.indexOf('No clips yet.'));
     expect(empty).toContain(`Saved clips go to ${FOLDER}`);
-    expect(text(renderToStaticMarkup(<KickClipsView s={state({ channel: null })} />))).toContain('Connect your main Kick account first');
+    expect(text(renderToStaticMarkup(<KickClipsView s={state({ channel: null })} />))).toContain('Connect your main Kick account on the Dashboard.');
   });
 
   it('posts clips made with Kick’s own /clip (no !clip or kick.com login of CONDUIT’s own)', async () => {
     const { KickClipsView } = await import('../pages/kick/KickClipsPage');
     const out = text(renderToStaticMarkup(<KickClipsView s={state()} />));
-    expect(out).toContain('Checked every 2 minutes, so clips made in chat with Kick’s /clip show up within a few minutes.');
-    expect(out).toContain('each with its thumbnail and Watch stream and View clip on Kick buttons.');
+    expect(out).toContain('Post new clips automatically');
     expect(out).not.toMatch(/!clip|Sign in|session_token/);
   });
 
@@ -352,7 +371,6 @@ describe('Kick → Clips page', () => {
     expect(t).toMatch(/Clips \(1\)/);
     expect(t).toMatch(/Great play 1:15 Clipped by BigFan · [^·]+ · Just Chatting · 12 views/);
     expect(t).toContain(problem);
-    expect(t).toContain('Choose a Discord channel in Clip settings to post clips.');
     expect(html).toContain('title="Choose a Discord channel in Clip settings first" class="btn btn-secondary" disabled="">Post to Discord</button>');
     expect(t).toMatch(/Post to Discord Save/);
     expect(t).not.toMatch(/On this PC|Not posted|Not saved/);

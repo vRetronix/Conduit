@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { migrate, migrations, openDatabase } from '@conduit/database';
 import { createCommandSchema, describeAccess, DISCORD_PERMISSION_BITS as DISCORD, updateCommandSchema } from '@conduit/shared';
-import { CooldownTracker, discordAllows, kickAllows, kickRoles } from '../../apps/server/src/community/command-access';
+import { CooldownTracker, discordAllows, chatAllows, kickRoles } from '../../apps/server/src/community/command-access';
 
 const BROADCASTER = '4242001';
 
@@ -29,7 +29,7 @@ describe('Kick roles (from the verified chat event)', () => {
     ];
     for (const [badges, id, expected] of matrix) {
       const r = roles(id, badges);
-      expect((['everyone', 'subscriber', 'moderator', 'broadcaster'] as const).map((p) => kickAllows(p, r))).toEqual(expected);
+      expect((['everyone', 'subscriber', 'moderator', 'broadcaster'] as const).map((p) => chatAllows(p, r))).toEqual(expected);
     }
   });
 });
@@ -178,7 +178,7 @@ describe('migration 11 (permissions and cooldowns)', () => {
     db.prepare(
       "INSERT INTO chat_commands (id, platform, trigger, description, response, enabled, created_at, updated_at) VALUES ('k1', 'kick', '!english', NULL, 'Speak English please', 1, '2026-10-11T17:22:32Z', '2026-10-11T17:22:32Z')",
     ).run();
-    expect(migrate(db, migrations)).toEqual({ applied: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(db.prepare('SELECT * FROM chat_commands').all()).toEqual([
       {
         id: 'k1',

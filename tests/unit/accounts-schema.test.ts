@@ -56,11 +56,11 @@ describe('migration 2 (accounts)', () => {
 
     const db = openDatabase(file);
     dbs.push(db);
-    expect(migrate(db, migrations)).toEqual({ applied: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(db.prepare("SELECT value FROM app_settings WHERE key = 'phase1_marker'").get()).toEqual({ value: 'kept' });
     expect(db.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({ n: 0 });
     // Running again is a no-op, and the database still passes integrity checks.
-    expect(migrate(db, migrations)).toEqual({ applied: [], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [], currentVersion: 30 });
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   });
 
@@ -69,7 +69,7 @@ describe('migration 2 (accounts)', () => {
     dbs.push(db);
     migrate(db, migrations.slice(0, 2));
     addUser(db, 'u1', 'alice');
-    expect(migrate(db, migrations)).toEqual({ applied: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(db.prepare("SELECT username, must_change_password AS flag FROM users WHERE id = 'u1'").get()).toEqual({ username: 'alice', flag: 0 });
     expect(() => db.prepare("UPDATE users SET must_change_password = 2 WHERE id = 'u1'").run()).toThrow(/CHECK/);
   });
@@ -79,7 +79,7 @@ describe('migration 2 (accounts)', () => {
     dbs.push(db);
     migrate(db, migrations.slice(0, 3));
     addUser(db, 'u1', 'alice');
-    expect(migrate(db, migrations)).toEqual({ applied: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(db.prepare('SELECT username FROM users').all()).toEqual([{ username: 'alice' }]);
     const insert = (platform: string, ext: string, status = 'connected', scopes = '[]') =>
       db
@@ -100,7 +100,7 @@ describe('migration 2 (accounts)', () => {
     dbs.push(db);
     migrate(db, migrations.slice(0, 4));
     db.prepare(`INSERT INTO platform_connections (id, platform, external_account_id, account_name, status, connected_at, updated_at) VALUES ('c1', 'discord', 'x', 'n', 'connected', ?, ?)`).run(T, T);
-    expect(migrate(db, migrations)).toEqual({ applied: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(db.prepare("SELECT account_handle AS h, avatar_data_url AS a FROM platform_connections WHERE id = 'c1'").get()).toEqual({ h: null, a: null });
     db.prepare("UPDATE platform_connections SET avatar_data_url = 'data:image/png;base64,AAAA' WHERE id = 'c1'").run();
     expect(() => db.prepare("UPDATE platform_connections SET avatar_data_url = 'https://evil.example/a.png' WHERE id = 'c1'").run()).toThrow(/CHECK/);
@@ -112,7 +112,7 @@ describe('migration 2 (accounts)', () => {
     const db = openDatabase(':memory:');
     dbs.push(db);
     migrate(db, migrations.slice(0, 5));
-    expect(migrate(db, migrations)).toEqual({ applied: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     const insert = (id: string) =>
       db.prepare('INSERT INTO discord_application (id, application_id, validated_at, updated_at) VALUES (?, ?, ?, ?)').run(id === 'second' ? 2 : 1, id, T, T);
     insert('123456789012345678');
@@ -129,7 +129,7 @@ describe('migration 2 (accounts)', () => {
     const db = openDatabase(':memory:');
     dbs.push(db);
     migrate(db, migrations.slice(0, 6));
-    expect(migrate(db, migrations)).toEqual({ applied: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     const insert = (status: string, registeredAt: string | null, guild = '42') =>
       db
         .prepare('INSERT OR REPLACE INTO discord_command_registrations (guild_id, application_id, commands_hash, status, registered_at, last_attempt_at) VALUES (?, ?, ?, ?, ?, ?)')
@@ -148,7 +148,7 @@ describe('migration 2 (accounts)', () => {
     dbs.push(db);
     migrate(db, migrations.slice(0, 7));
     db.prepare(`INSERT INTO platform_connections (id, platform, external_account_id, account_name, status, connected_at, updated_at) VALUES ('d1', 'discord', 'x', 'n', 'connected', ?, ?)`).run(T, T);
-    expect(migrate(db, migrations)).toEqual({ applied: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     expect(db.prepare("SELECT role, account_name AS n, status FROM platform_connections WHERE id = 'd1'").get()).toEqual({ role: 'primary', n: 'n', status: 'connected' });
     db.prepare(`INSERT INTO platform_connections (id, platform, role, external_account_id, account_name, status, connected_at, updated_at) VALUES ('k2', 'kick', 'bot', 'y', 'b', 'connected', ?, ?)`).run(T, T);
     expect(() =>
@@ -162,7 +162,7 @@ describe('migration 2 (accounts)', () => {
     const db = openDatabase(':memory:');
     dbs.push(db);
     migrate(db, migrations.slice(0, 8));
-    expect(migrate(db, migrations)).toEqual({ applied: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29], currentVersion: 29 });
+    expect(migrate(db, migrations)).toEqual({ applied: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], currentVersion: 30 });
     const insert = (id: string, trigger: string, platform = 'kick', response = 'Hi') =>
       db
         .prepare('INSERT INTO chat_commands (id, platform, trigger, response, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)')

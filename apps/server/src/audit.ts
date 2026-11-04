@@ -26,6 +26,7 @@ export type AuditAction =
   | 'discord.commands.registered'
   | 'discord.command.used'
   | 'kick.chat.sent'
+  | 'twitch.chat.sent'
   | 'giveaway.created'
   | 'giveaway.started'
   | 'giveaway.ended'

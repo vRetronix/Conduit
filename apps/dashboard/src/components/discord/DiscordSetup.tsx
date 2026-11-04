@@ -1,7 +1,6 @@
 import { useId, useState } from 'react';
 import type { DisconnectResult } from '@conduit/shared/app/connections';
 import type { ApiResult } from '@conduit/shared/app/desktop-bridge';
-import { BOT_INSTALL_PERMISSIONS } from '@conduit/shared/discord/discord-permissions';
 import type { DiscordPortalPage, DiscordSetupState, DiscordSetupStep } from '@conduit/shared/discord/discord-setup';
 import { api, ApiClientError, errorMessage } from '../../api';
 import { bridge } from '../../bridge';
@@ -33,19 +32,16 @@ export function discordWizardSteps(s: DiscordSetupState): Array<WizardStep<Disco
     {
       id: 'application',
       label: 'Developer Portal',
-      description: 'Your own Discord application and bot, with three values copied from the Discord Developer Portal.',
       complete: s.application.configured,
     },
     {
       id: 'account',
       label: 'Your Account',
-      description: 'Sign in with Discord so CONDUIT knows which account is yours.',
       complete: s.account.connected,
     },
     {
       id: 'bot',
       label: 'Add & Start the Bot',
-      description: 'Add the bot to your server, start it, and check that everything is connected.',
       complete: s.nextStep === 'done',
     },
   ];
@@ -358,14 +354,13 @@ function SecretField(props: {
   onChange: (v: string) => void;
   stored: boolean;
   error?: string;
-  hint: string;
   /** Where the value comes from (shown as a tag next to the label). */
   source?: string;
   autoFocus?: boolean;
 }) {
   const id = useId();
   const [shown, setShown] = useState(false);
-  const describedBy = props.error ? `${id}-error` : `${id}-hint`;
+  const describedBy = props.error ? `${id}-error` : undefined;
   return (
     <div className="field">
       <label htmlFor={id}>
@@ -393,13 +388,9 @@ function SecretField(props: {
           {shown ? 'Hide' : 'Show'}
         </Button>
       </div>
-      {props.error ? (
+      {props.error && (
         <span id={`${id}-error`} className="field-error">
           {props.error}
-        </span>
-      ) : (
-        <span id={`${id}-hint`} className="field-hint">
-          {props.hint}
         </span>
       )}
     </div>
@@ -490,11 +481,6 @@ function ApplicationStep({ state: s, onSaved, onRemoved }: { state: DiscordSetup
 
   return (
     <div className="stack">
-      <p>
-        CONDUIT uses <strong>your own</strong> Discord application and bot — there is no shared CONDUIT bot. Create one in the Discord
-        Developer Portal (or use an existing one), then copy the three values marked <span className="portal-tag">Developer Portal</span>{' '}
-        below. This comes first because signing in with Discord uses your application.
-      </p>
       <ol className="portal-steps">
         <li>
           Open the Developer Portal and select <strong>New Application</strong> (or pick yours). Copy the <strong>Application ID</strong>{' '}
@@ -541,9 +527,11 @@ function ApplicationStep({ state: s, onSaved, onRemoved }: { state: DiscordSetup
             aria-invalid={err('applicationId') ? true : undefined}
             aria-describedby="discord-app-id-note"
           />
-          <span id="discord-app-id-note" className={err('applicationId') ? 'field-error' : 'field-hint'}>
-            {err('applicationId') ?? 'Also used as the OAuth2 Client ID (Discord shows the same number on the OAuth2 page).'}
-          </span>
+          {err('applicationId') && (
+            <span id="discord-app-id-note" className="field-error">
+              {err('applicationId')}
+            </span>
+          )}
         </div>
         <SecretField
           label="Client Secret"
@@ -552,7 +540,6 @@ function ApplicationStep({ state: s, onSaved, onRemoved }: { state: DiscordSetup
           onChange={setClientSecret}
           stored={stored.secret}
           error={err('clientSecret')}
-          hint="From the OAuth2 page. Used only to sign you in with Discord."
         />
         <SecretField
           label="Bot Token"
@@ -561,12 +548,7 @@ function ApplicationStep({ state: s, onSaved, onRemoved }: { state: DiscordSetup
           onChange={setBotToken}
           stored={stored.token}
           error={err('botToken')}
-          hint="From the Bot page. Used only by your bot. Never share it."
         />
-        <p className="muted small">
-          CONDUIT checks each value with Discord, then stores the secret and token encrypted with Windows (DPAPI). They are never shown
-          again.
-        </p>
         <ErrorLine error={save.error} />
         <div className="button-row">
           <button type="submit" className="btn btn-primary" disabled={save.busy} aria-busy={save.busy || undefined}>
@@ -579,10 +561,7 @@ function ApplicationStep({ state: s, onSaved, onRemoved }: { state: DiscordSetup
         <div className="danger-zone">
           {confirmRemove ? (
             <>
-              <p className="small">
-                Remove the whole Discord setup? CONDUIT signs out of your Discord account, stops the bot and deletes the stored secret and
-                token. Your application and the bot's servers on Discord are not changed.
-              </p>
+              <p className="small">Remove the Discord setup? Your application on Discord isn’t changed.</p>
               <div className="button-row">
                 <Button
                   variant="danger"
@@ -613,10 +592,6 @@ function AccountStep({ state: s, onChanged }: { state: DiscordSetupState; onChan
   const a = s.account;
   return (
     <div className="stack">
-      <p>
-        Discord's own page opens in your browser and asks only to see your
-        username and avatar (the <code>identify</code> permission). CONDUIT never sees your Discord password.
-      </p>
       {a.connected ? (
         <div className="account-cell left">
           {a.avatarDataUrl && <img className="account-avatar" src={a.avatarDataUrl} alt="" width={28} height={28} />}
@@ -656,7 +631,6 @@ function AccountStep({ state: s, onChanged }: { state: DiscordSetupState; onChan
           </Button>
         )}
       </div>
-      <p className="muted small">Signing in does not check or start the bot; that's the next step.</p>
     </div>
   );
 }
@@ -741,32 +715,12 @@ function InstallStep({ state: s, onChanged }: { state: DiscordSetupState; onChan
   const i = s.installation;
   return (
     <div className="stack">
-      <p>Add your bot to the Discord server you stream for. You need the Manage Server permission there.</p>
-      <ul className="facts">
-        <li>
-          Permissions requested ({s.installPermissions}): <strong>{BOT_INSTALL_PERMISSIONS.map((p) => p.name).join(', ')}</strong> —
-          what CONDUIT’s features use, and nothing else. CONDUIT never asks for Administrator. A bot added before this keeps its
-          old role: add it again with this link, or give its role these permissions under Server Settings → Roles.
-        </li>
-        <li>
-          Gateway intents: {s.intents.map((x) => `${x.name}${x.privileged ? ' (privileged)' : ''}`).join(', ')}.{' '}
-          {s.intents.some((x) => x.privileged)
-            ? 'The privileged ones are required: turn them on under Bot → Privileged Gateway Intents.'
-            : 'None are privileged, so no portal toggles are needed.'}
-        </li>
-        <li>
-          On your application's <em>Installation</em> page, <em>Guild Install</em> must be enabled (the default). <em>Public Bot</em> can be
-          turned off on the Bot page, since only you need to add it.
-        </li>
-      </ul>
-
       <p className="install-status" role="status">
         Server:{' '}
         <strong className={i.status === 'installed' ? 'text-ok' : i.status === 'unable_to_verify' ? 'text-warn' : ''}>
           {INSTALL_LABEL[i.status]}
         </strong>
         {i.guilds.length > 0 && <span> — {i.guilds.map((g) => g.name).join(', ')}</span>}
-        {i.checkedAt && <span className="muted small"> (checked {i.source === 'gateway' ? 'live by the bot' : 'with Discord'})</span>}
       </p>
       {i.pending && (
         <p className="connection-note" role="status">
@@ -805,9 +759,6 @@ function InstallStep({ state: s, onChanged }: { state: DiscordSetupState; onChan
           Check again
         </Button>
       </div>
-      <p className="muted small">
-        CONDUIT shows Installed only after Discord confirms the bot is in a server, not just because the page opened.
-      </p>
     </div>
   );
 }
@@ -817,7 +768,6 @@ function BotStep({ state: s, onChanged }: { state: DiscordSetupState; onChanged:
   const b = s.bot;
   return (
     <div className="stack">
-      <p>CONDUIT runs your bot while the app is open and checks its connection to Discord.</p>
       <p role="status">
         Bot:{' '}
         <strong className={b.status === 'connected' ? 'text-ok' : b.status === 'error' ? 'text-bad' : ''}>
@@ -858,13 +808,7 @@ export function CommandsPanel({ state: s, onChanged }: { state: DiscordSetupStat
         >
           {c.status === 'registering' && <span className="spinner" aria-hidden="true" />}
           {COMMANDS_LABEL[c.status]}
-        </strong>{' '}
-        <span className="muted small">({c.names.map((n) => `/${n}`).join(', ')})</span>
-      </p>
-      <p className="muted small">
-        For {c.botUsername ?? 'your bot'}
-        {c.applicationId && <> (application {c.applicationId})</>}, registered in each server so they appear right away. The bot can be
-        online while its commands are not registered.
+        </strong>
       </p>
       {c.guilds.length > 0 && (
         <ul className="facts">
@@ -883,7 +827,6 @@ export function CommandsPanel({ state: s, onChanged }: { state: DiscordSetupStat
           {c.problem}
         </p>
       )}
-      {c.lastAttemptAt && <p className="muted small">Last attempt: {new Date(c.lastAttemptAt).toLocaleString()}</p>}
       <ErrorLine error={action.error} />
       {c.canRegister && (
         <div className="button-row">

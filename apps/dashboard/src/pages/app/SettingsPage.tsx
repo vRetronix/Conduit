@@ -50,17 +50,9 @@ export function SettingsView({ info, releases, children }: { info: AppInfo | nul
           {channel && <span className={`about-channel about-channel-${channel}`}>{RELEASE_CHANNEL_LABELS[channel]}</span>}
         </div>
         <dl>
-          <Row label="Version">{version ?? '—'}</Row>
-          <Row label="Release channel">{channel ? RELEASE_CHANNEL_LABELS[channel] : '—'}</Row>
-          <Row label="Build">{info ? (info.isPackaged ? 'Installed app' : 'Development build (running from source)') : '—'}</Row>
+          <Row label="Build">{info ? (info.isPackaged ? 'Installed app' : 'Development build') : '—'}</Row>
           <Row label="Platform">{info ? (info.platform === 'win32' ? 'Windows' : info.platform) : '—'}</Row>
         </dl>
-        <p className="muted small">
-          {channel === 'initial-development'
-            ? 'Versions below 1.0.0 are initial development: features and settings may still change between releases. '
-            : ''}
-          CONDUIT doesn’t check for updates online.
-        </p>
       </section>
       {children}
       <ReleaseNotes releases={releases} current={version} />

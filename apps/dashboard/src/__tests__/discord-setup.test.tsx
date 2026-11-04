@@ -230,17 +230,14 @@ describe('Discord setup wizard', () => {
     expect(html).toContain('Remove Discord setup');
   });
 
-  it('install step: only the permissions CONDUIT uses, no privileged intents, never claims an unverified install', async () => {
+  it('install step: never claims an unverified install', async () => {
     const t = text(
       await wizard(
         state({ nextStep: 'install', application: configured, account: { connected: true, name: 'R' }, installation: { status: 'not_installed' } }),
         'install',
       ),
     );
-    expect(t).toContain('Permissions requested (0): View Channels, Send Messages, Embed Links, Attach Files, Add Reactions, Read Message History, Mention Everyone, Manage Messages, View Audit Log, Timeout Members, Ban Members, Kick Members, Manage Roles, Manage Server');
-    expect(t).not.toMatch(/Administrator,/);
-    expect(t).toContain('never asks for Administrator');
-    expect(t).toContain('None are privileged');
+    expect(t).not.toMatch(/Permissions requested|Administrator/);
     expect(t).toMatch(/Server: Not Installed/);
     expect(t).toContain('Add bot to server');
     expect(t).toContain('Check again');
@@ -252,11 +249,9 @@ describe('Discord setup wizard', () => {
     expect(t).toContain('Cancel');
   });
 
-  it('account step explains the minimal scope and that sign-in does not prove the bot works', async () => {
+  it('account step is just the sign-in button', async () => {
     const t = text(await wizard(state({ nextStep: 'account', application: configured }), 'account'));
-    expect(t).toContain('identify');
-    expect(t).toContain('never sees your Discord password');
-    expect(t).toContain('does not check or start the bot');
+    expect(t).not.toMatch(/identify|never sees your Discord password|does not check or start the bot/);
     expect(t).toContain('Connect Discord account');
   });
 
@@ -283,7 +278,7 @@ describe('three-step wizard', () => {
     const html = await wizard(state(), 'application');
     const steps = [...html.matchAll(/<span class="step-number">[^<]*<\/span> ([^<]+)<\/button>/g)].map((m) => decoded(m[1]!));
     expect(steps).toEqual(['Developer Portal', 'Your Account', 'Add & Start the Bot']);
-    expect(decoded(text(html))).toContain('Step 1 of 3 · Developer Portal');
+    expect(decoded(text(html))).not.toContain('Step 1 of 3');
     // A fresh setup can only open the first step.
     expect(html.match(/<button type="button" disabled=""/g)?.length).toBe(2);
   });
@@ -292,8 +287,7 @@ describe('three-step wizard', () => {
     const { wizardStepFor } = await import('../components/discord/DiscordSetup');
     expect((['application', 'account', 'install', 'bot', 'done'] as const).map(wizardStepFor)).toEqual(['application', 'account', 'bot', 'bot', 'bot']);
     const t = decoded(text(await wizard(state({ nextStep: 'install', application: configured, account: { connected: true, name: 'R' } }), 'install')));
-    expect(t).toContain('Step 3 of 3 · Add & Start the Bot');
-    expect(t).toContain('Add the bot to your server');
+    expect(t).toContain('Add bot to server');
     expect(t).toContain('Start the bot');
   });
 
@@ -359,7 +353,7 @@ describe('slash command status', () => {
       commands: { applicationId: '123456789012345678', botUsername: 'RetroBot', ...commands },
     });
 
-  it('the wizard panel names the application, bot, servers and last attempt', async () => {
+  it('the wizard panel shows the registration status per server', async () => {
     const t = text(
       await wizard(
         online({
@@ -377,12 +371,8 @@ describe('slash command status', () => {
     );
     expect(t).toContain('Slash commands');
     expect(t).toMatch(/Commands: Partly Registered/);
-    expect(t).toContain('/ping');
-    expect(t).toContain('RetroBot');
-    expect(t).toContain('123456789012345678');
     expect(t).toMatch(/Retro Server: Registered/);
     expect(t).toMatch(/Second Server: Failed/);
-    expect(t).toContain('Last attempt');
     expect(t).toContain('retry in 30 seconds');
     expect(t).toContain('Retry');
   });

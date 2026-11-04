@@ -2,6 +2,8 @@
  * Who may run a custom command, and cooldowns. Decisions use only platform-provided data:
  * - Kick: the signed chat.message.sent payload — the sender's user id (compared with the channel owner's) and the
  *   badge types Kick documents ("moderator", "subscriber"). Unknown badges grant nothing; missing data = no role.
+ * - Twitch: the EventSub channel.chat.message event — the chatter's user id (compared with the channel owner's) and
+ *   Twitch's badge set ids ("moderator", "lead_moderator", "subscriber", "founder"). The same ladder as Kick.
  * - Discord: the interaction's member permissions, computed by Discord.
  *
  * Cooldowns are kept in memory (single backend process) and reset when CONDUIT restarts. Keys use the platform,
@@ -14,29 +16,38 @@ import { groupAllows, groupForPermission, PERMISSION_HELP, type CommandPermissio
 
 // ── permissions ───────────────────────────────────────────────────────────────
 
-export type KickRole = 'broadcaster' | 'moderator' | 'subscriber';
+export type ChatRole = 'broadcaster' | 'moderator' | 'subscriber';
 
 const RANK: Record<CommandPermission, number> = { everyone: 0, subscriber: 1, moderator: 2, broadcaster: 3 };
 
 /** The sender's Kick roles from the verified event. */
-export function kickRoles(sender: { userId: string; badgeTypes: readonly string[] }, broadcasterUserId: string): Set<KickRole> {
-  const roles = new Set<KickRole>();
+export function kickRoles(sender: { userId: string; badgeTypes: readonly string[] }, broadcasterUserId: string): Set<ChatRole> {
+  const roles = new Set<ChatRole>();
   if (sender.userId === broadcasterUserId) roles.add('broadcaster');
   if (sender.badgeTypes.includes('moderator')) roles.add('moderator');
   if (sender.badgeTypes.includes('subscriber')) roles.add('subscriber');
   return roles;
 }
 
-/** Highest level a Kick sender qualifies for. */
-function kickLevel(roles: Set<KickRole>): number {
+/** The sender's Twitch roles from the EventSub chat event. Founders are subscribers; lead moderators are moderators. */
+export function twitchRoles(sender: { userId: string; badgeTypes: readonly string[] }, broadcasterUserId: string): Set<ChatRole> {
+  const roles = new Set<ChatRole>();
+  if (sender.userId === broadcasterUserId) roles.add('broadcaster');
+  if (sender.badgeTypes.includes('moderator') || sender.badgeTypes.includes('lead_moderator')) roles.add('moderator');
+  if (sender.badgeTypes.includes('subscriber') || sender.badgeTypes.includes('founder')) roles.add('subscriber');
+  return roles;
+}
+
+/** Highest level a Kick or Twitch sender qualifies for. */
+function chatLevel(roles: Set<ChatRole>): number {
   if (roles.has('broadcaster')) return RANK.broadcaster;
   if (roles.has('moderator')) return RANK.moderator;
   if (roles.has('subscriber')) return RANK.subscriber;
   return RANK.everyone;
 }
 
-export function kickAllows(permission: CommandPermission, roles: Set<KickRole>): boolean {
-  return kickLevel(roles) >= RANK[permission];
+export function chatAllows(permission: CommandPermission, roles: Set<ChatRole>): boolean {
+  return chatLevel(roles) >= RANK[permission];
 }
 
 /** A custom command's permission on Discord: the same groups as the default commands. */
@@ -45,7 +56,7 @@ export function discordAllows(permission: CommandPermission, memberPermissions: 
   return groupAllows(groupForPermission(permission), memberPermissions);
 }
 
-export function deniedMessage(platform: 'kick' | 'discord', permission: CommandPermission): string {
+export function deniedMessage(platform: 'kick' | 'twitch' | 'discord', permission: CommandPermission): string {
   return `Not allowed: ${PERMISSION_HELP[platform][permission].label.toLowerCase()} only.`;
 }
 
